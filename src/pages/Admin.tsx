@@ -6,31 +6,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, LogOut } from "lucide-react";
-import type { Enums } from "@/integrations/supabase/types";
-
-const clientStatusLabels: Record<string, string> = {
-  new: "Новая",
-  sent_to_host: "Передана хосту",
-  completed: "Завершена",
-  rejected: "Отказ",
-};
-
-const hostStatusLabels: Record<string, string> = {
-  new: "Новая",
-  verified: "Верифицирован",
-  rejected: "Отклонена",
-};
-
-const lotStatusLabels: Record<string, string> = {
-  draft: "Черновик",
-  published: "Опубликован",
-  archived: "Архив",
-};
+import { Loader2, LogOut, Plus, Pencil } from "lucide-react";
+import { LotFormDialog } from "@/components/admin/LotFormDialog";
+import { DocumentsTab } from "@/components/admin/DocumentsTab";
+import type { Enums, Tables } from "@/integrations/supabase/types";
 
 export default function Admin() {
   const [session, setSession] = useState<any>(null);
@@ -39,7 +21,6 @@ export default function Admin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
-  const queryClient = useQueryClient();
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
@@ -129,6 +110,8 @@ export default function Admin() {
 
 function AdminDashboard() {
   const queryClient = useQueryClient();
+  const [lotFormOpen, setLotFormOpen] = useState(false);
+  const [editingLot, setEditingLot] = useState<Tables<"lots"> | null>(null);
 
   const { data: clientApps } = useQuery({
     queryKey: ["admin", "client_applications"],
@@ -179,17 +162,6 @@ function AdminDashboard() {
     },
   });
 
-  const updateLotStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("lots").update({ status: status as any }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "lots"] });
-      toast({ title: "Статус обновлён" });
-    },
-  });
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
@@ -203,10 +175,11 @@ function AdminDashboard() {
 
       <div className="container py-6">
         <Tabs defaultValue="client-apps">
-          <TabsList className="mb-6">
+          <TabsList className="mb-6 flex-wrap">
             <TabsTrigger value="client-apps">Заявки клиентов ({clientApps?.length || 0})</TabsTrigger>
             <TabsTrigger value="host-apps">Заявки хостов ({hostApps?.length || 0})</TabsTrigger>
             <TabsTrigger value="lots">Лоты ({lots?.length || 0})</TabsTrigger>
+            <TabsTrigger value="documents">Документы</TabsTrigger>
           </TabsList>
 
           <TabsContent value="client-apps">
@@ -305,6 +278,11 @@ function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="lots">
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => { setEditingLot(null); setLotFormOpen(true); }}>
+                <Plus className="h-4 w-4 mr-2" /> Создать лот
+              </Button>
+            </div>
             <div className="rounded-lg border overflow-auto">
               <Table>
                 <TableHeader>
@@ -313,8 +291,9 @@ function AdminDashboard() {
                     <TableHead>Адрес</TableHead>
                     <TableHead>Категория</TableHead>
                     <TableHead>Цена</TableHead>
-                    <TableHead>Доступ</TableHead>
+                    <TableHead>Мытищи</TableHead>
                     <TableHead>Статус</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -324,32 +303,46 @@ function AdminDashboard() {
                       <TableCell className="max-w-[200px] truncate">{lot.address}</TableCell>
                       <TableCell>{lot.category}</TableCell>
                       <TableCell>{lot.price_monthly.toLocaleString("ru-RU")} ₽</TableCell>
-                      <TableCell>{lot.access_mode}</TableCell>
+                      <TableCell>{lot.is_mytishchi ? "Да" : "Нет"}</TableCell>
                       <TableCell>
-                        <Select value={lot.status} onValueChange={(v) => updateLotStatus.mutate({ id: lot.id, status: v })}>
-                          <SelectTrigger className="w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="draft">Черновик</SelectItem>
-                            <SelectItem value="published">Опубликован</SelectItem>
-                            <SelectItem value="archived">Архив</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <span className={`text-xs font-medium px-2 py-1 rounded ${
+                          lot.status === "published" ? "bg-primary/10 text-primary" :
+                          lot.status === "archived" ? "bg-muted text-muted-foreground" :
+                          "bg-accent text-accent-foreground"
+                        }`}>
+                          {lot.status === "published" ? "Опубликован" : lot.status === "archived" ? "Архив" : "Черновик"}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <Button variant="ghost" size="sm" onClick={() => { setEditingLot(lot); setLotFormOpen(true); }}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   ))}
                   {(!lots || lots.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет лотов</TableCell>
+                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет лотов</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </div>
           </TabsContent>
+
+          <TabsContent value="documents">
+            <DocumentsTab />
+          </TabsContent>
         </Tabs>
       </div>
+
+      {lotFormOpen && (
+        <LotFormDialog
+          open={lotFormOpen}
+          onOpenChange={setLotFormOpen}
+          lot={editingLot}
+        />
+      )}
     </div>
   );
 }
