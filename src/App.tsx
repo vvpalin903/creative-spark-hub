@@ -25,6 +25,7 @@ const App = () => (
           <Route path="/lot/:id" element={<LotDetail />} />
           <Route path="/host" element={<Host />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/docs/:slug" element={<Document />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
