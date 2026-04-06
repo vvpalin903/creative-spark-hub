@@ -9,6 +9,7 @@ import LotDetail from "./pages/LotDetail";
 import Host from "./pages/Host";
 import Admin from "./pages/Admin";
 import Document from "./pages/Document";
+import HostVerification from "./pages/HostVerification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
