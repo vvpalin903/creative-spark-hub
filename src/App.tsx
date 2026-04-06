@@ -9,6 +9,7 @@ import LotDetail from "./pages/LotDetail";
 import Host from "./pages/Host";
 import Admin from "./pages/Admin";
 import Document from "./pages/Document";
+import HostVerification from "./pages/HostVerification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/lot/:id" element={<LotDetail />} />
           <Route path="/host" element={<Host />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/host/verification" element={<HostVerification />} />
           <Route path="/docs/:slug" element={<Document />} />
           <Route path="*" element={<NotFound />} />
         </Routes>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,6 +20,7 @@ const hostFaq = [
 ];
 
 export default function Host() {
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
@@ -40,7 +42,7 @@ export default function Host() {
       return;
     }
 
-    const { error } = await supabase.from("host_applications").insert({
+    const { data, error } = await supabase.from("host_applications").insert({
       host_name: hostName,
       host_phone: hostPhone,
       address,
@@ -48,14 +50,14 @@ export default function Host() {
       category: category as any,
       access_mode: accessMode as any,
       schedule: schedule || null,
-    });
+    }).select("id").single();
 
     setSubmitting(false);
     if (error) {
       toast({ title: "Ошибка", description: "Не удалось отправить заявку", variant: "destructive" });
     } else {
-      setSubmitted(true);
-      toast({ title: "Заявка отправлена!", description: "Мы свяжемся с вами для верификации" });
+      toast({ title: "Заявка отправлена!", description: "Теперь загрузите документ для верификации" });
+      navigate(`/host/verification?app=${data.id}`);
     }
   };
 
