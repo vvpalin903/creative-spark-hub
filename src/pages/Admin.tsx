@@ -23,36 +23,46 @@ export default function Admin() {
   const [authLoading, setAuthLoading] = useState(false);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      if (session?.user) {
-        const { data } = await supabase.rpc("has_role", {
-          _user_id: session.user.id,
-          _role: "admin" as Enums<"app_role">,
-        });
-        setIsAdmin(!!data);
-      } else {
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    });
+    let mounted = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session?.user) {
-        supabase.rpc("has_role", {
-          _user_id: session.user.id,
+    const checkRole = async (userId: string) => {
+      try {
+        const { data } = await supabase.rpc("has_role", {
+          _user_id: userId,
           _role: "admin" as Enums<"app_role">,
-        }).then(({ data }) => {
-          setIsAdmin(!!data);
-          setLoading(false);
         });
+        if (mounted) setIsAdmin(!!data);
+      } catch {
+        if (mounted) setIsAdmin(false);
+      }
+      if (mounted) setLoading(false);
+    };
+
+    supabase.auth.getSession().then(({ data: { session: s } }) => {
+      if (!mounted) return;
+      setSession(s);
+      if (s?.user) {
+        checkRole(s.user.id);
       } else {
         setLoading(false);
       }
     });
 
-    return () => subscription.unsubscribe();
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
+      if (!mounted) return;
+      setSession(s);
+      if (s?.user) {
+        checkRole(s.user.id);
+      } else {
+        setIsAdmin(false);
+        setLoading(false);
+      }
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
