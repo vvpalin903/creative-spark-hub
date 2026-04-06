@@ -8,6 +8,7 @@ import Rent from "./pages/Rent";
 import LotDetail from "./pages/LotDetail";
 import Host from "./pages/Host";
 import Admin from "./pages/Admin";
+import Document from "./pages/Document";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/lot/:id" element={<LotDetail />} />
           <Route path="/host" element={<Host />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/docs/:slug" element={<Document />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
