@@ -20,6 +20,7 @@ const hostFaq = [
 ];
 
 export default function Host() {
+  const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
