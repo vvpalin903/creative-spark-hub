@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { LotCard } from "@/components/LotCard";
-import { Button } from "@/components/ui/button";
+import { YandexMap } from "@/components/YandexMap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
@@ -11,6 +11,7 @@ import type { Tables } from "@/integrations/supabase/types";
 
 export default function Rent() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const category = searchParams.get("category") || "all";
   const accessMode = searchParams.get("access") || "all";
 
@@ -36,13 +37,24 @@ export default function Rent() {
     },
   });
 
+  const mapPoints = useMemo(() => {
+    if (!lots) return [];
+    return lots
+      .filter((l) => l.lat && l.lng)
+      .map((l) => ({
+        id: l.id,
+        lat: l.lat!,
+        lng: l.lng!,
+        title: l.title,
+        price: l.price_monthly,
+        category: l.category,
+      }));
+  }, [lots]);
+
   const updateFilter = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams);
-    if (value === "all") {
-      params.delete(key);
-    } else {
-      params.set(key, value);
-    }
+    if (value === "all") params.delete(key);
+    else params.set(key, value);
     setSearchParams(params);
   };
 
@@ -53,8 +65,7 @@ export default function Rent() {
           Снять место для хранения
         </h1>
 
-        {/* Filters */}
-        <div className="flex flex-wrap gap-4 mb-8">
+        <div className="flex flex-wrap gap-4 mb-6">
           <Select value={category} onValueChange={(v) => updateFilter("category", v)}>
             <SelectTrigger className="w-[180px]">
               <SelectValue placeholder="Категория" />
@@ -79,12 +90,12 @@ export default function Rent() {
           </Select>
         </div>
 
-        {/* Map placeholder */}
-        <div className="w-full h-[300px] md:h-[400px] rounded-lg bg-muted border mb-8 flex items-center justify-center">
-          <p className="text-muted-foreground text-sm">Яндекс.Карта загружается...</p>
-        </div>
+        <YandexMap
+          points={mapPoints}
+          onPointClick={(id) => navigate(`/lot/${id}`)}
+          className="w-full h-[300px] md:h-[400px] mb-8"
+        />
 
-        {/* Lots grid */}
         {isLoading ? (
           <div className="flex justify-center py-12">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />

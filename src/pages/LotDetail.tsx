@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/Layout";
@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { YandexMap } from "@/components/YandexMap";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { MapPin, Clock, Ruler, AlertTriangle, Loader2, Check } from "lucide-react";
@@ -167,10 +168,16 @@ export default function LotDetail() {
               </div>
             )}
 
-            {/* Map placeholder */}
-            <div className="h-[300px] rounded-lg bg-muted border flex items-center justify-center">
-              <p className="text-muted-foreground text-sm">Карта</p>
-            </div>
+            {/* Map */}
+            {lot.lat && lot.lng && (
+              <YandexMap
+                points={[{ id: lot.id, lat: lot.lat, lng: lot.lng, title: lot.title, price: lot.price_monthly, category: lot.category }]}
+                center={[lot.lat, lot.lng]}
+                zoom={15}
+                singlePoint
+                className="w-full h-[300px]"
+              />
+            )}
           </div>
 
           {/* Application form */}
