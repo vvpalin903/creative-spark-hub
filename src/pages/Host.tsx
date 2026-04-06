@@ -42,7 +42,7 @@ export default function Host() {
       return;
     }
 
-    const { error } = await supabase.from("host_applications").insert({
+    const { data, error } = await supabase.from("host_applications").insert({
       host_name: hostName,
       host_phone: hostPhone,
       address,
@@ -50,14 +50,14 @@ export default function Host() {
       category: category as any,
       access_mode: accessMode as any,
       schedule: schedule || null,
-    });
+    }).select("id").single();
 
     setSubmitting(false);
     if (error) {
       toast({ title: "Ошибка", description: "Не удалось отправить заявку", variant: "destructive" });
     } else {
-      setSubmitted(true);
-      toast({ title: "Заявка отправлена!", description: "Мы свяжемся с вами для верификации" });
+      toast({ title: "Заявка отправлена!", description: "Теперь загрузите документ для верификации" });
+      navigate(`/host/verification?app=${data.id}`);
     }
   };
 
