@@ -8,6 +8,7 @@ import Rent from "./pages/Rent";
 import LotDetail from "./pages/LotDetail";
 import Host from "./pages/Host";
 import Admin from "./pages/Admin";
+import Document from "./pages/Document";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
