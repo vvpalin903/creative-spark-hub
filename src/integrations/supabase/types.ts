@@ -14,16 +14,275 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      client_applications: {
+        Row: {
+          category: Database["public"]["Enums"]["lot_category"] | null
+          client_name: string
+          client_phone: string
+          comment: string | null
+          created_at: string
+          desired_date: string | null
+          id: string
+          lot_id: string | null
+          status: Database["public"]["Enums"]["client_app_status"]
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["lot_category"] | null
+          client_name: string
+          client_phone: string
+          comment?: string | null
+          created_at?: string
+          desired_date?: string | null
+          id?: string
+          lot_id?: string | null
+          status?: Database["public"]["Enums"]["client_app_status"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["lot_category"] | null
+          client_name?: string
+          client_phone?: string
+          comment?: string | null
+          created_at?: string
+          desired_date?: string | null
+          id?: string
+          lot_id?: string | null
+          status?: Database["public"]["Enums"]["client_app_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_applications_lot_id_fkey"
+            columns: ["lot_id"]
+            isOneToOne: false
+            referencedRelation: "lots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      host_applications: {
+        Row: {
+          access_mode: Database["public"]["Enums"]["access_mode"]
+          address: string
+          category: Database["public"]["Enums"]["lot_category"]
+          created_at: string
+          host_name: string
+          host_phone: string
+          id: string
+          lat: number | null
+          lng: number | null
+          photos: string[] | null
+          place_type: string | null
+          schedule: string | null
+          status: Database["public"]["Enums"]["host_app_status"]
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          access_mode?: Database["public"]["Enums"]["access_mode"]
+          address: string
+          category?: Database["public"]["Enums"]["lot_category"]
+          created_at?: string
+          host_name: string
+          host_phone: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          photos?: string[] | null
+          place_type?: string | null
+          schedule?: string | null
+          status?: Database["public"]["Enums"]["host_app_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          access_mode?: Database["public"]["Enums"]["access_mode"]
+          address?: string
+          category?: Database["public"]["Enums"]["lot_category"]
+          created_at?: string
+          host_name?: string
+          host_phone?: string
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          photos?: string[] | null
+          place_type?: string | null
+          schedule?: string | null
+          status?: Database["public"]["Enums"]["host_app_status"]
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      lots: {
+        Row: {
+          access_mode: Database["public"]["Enums"]["access_mode"]
+          address: string
+          area_sqm: number | null
+          category: Database["public"]["Enums"]["lot_category"]
+          created_at: string
+          description: string | null
+          host_id: string | null
+          id: string
+          is_mytishchi: boolean
+          lat: number | null
+          lng: number | null
+          photos: string[] | null
+          price_monthly: number
+          rules: string | null
+          schedule: string | null
+          status: Database["public"]["Enums"]["lot_status"]
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          access_mode?: Database["public"]["Enums"]["access_mode"]
+          address: string
+          area_sqm?: number | null
+          category?: Database["public"]["Enums"]["lot_category"]
+          created_at?: string
+          description?: string | null
+          host_id?: string | null
+          id?: string
+          is_mytishchi?: boolean
+          lat?: number | null
+          lng?: number | null
+          photos?: string[] | null
+          price_monthly: number
+          rules?: string | null
+          schedule?: string | null
+          status?: Database["public"]["Enums"]["lot_status"]
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          access_mode?: Database["public"]["Enums"]["access_mode"]
+          address?: string
+          area_sqm?: number | null
+          category?: Database["public"]["Enums"]["lot_category"]
+          created_at?: string
+          description?: string | null
+          host_id?: string | null
+          id?: string
+          is_mytishchi?: boolean
+          lat?: number | null
+          lng?: number | null
+          photos?: string[] | null
+          price_monthly?: number
+          rules?: string | null
+          schedule?: string | null
+          status?: Database["public"]["Enums"]["lot_status"]
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      site_documents: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          slug: string
+          title: string
+          updated_at: string
+          version: number
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slug: string
+          title: string
+          updated_at?: string
+          version?: number
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          slug?: string
+          title?: string
+          updated_at?: string
+          version?: number
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      verification_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          file_url: string
+          id: string
+          reviewer_notes: string | null
+          status: Database["public"]["Enums"]["verification_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          file_url: string
+          id?: string
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          file_url?: string
+          id?: string
+          reviewer_notes?: string | null
+          status?: Database["public"]["Enums"]["verification_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      access_mode: "24/7" | "scheduled"
+      app_role: "admin" | "user"
+      client_app_status: "new" | "sent_to_host" | "completed" | "rejected"
+      host_app_status: "new" | "verified" | "rejected"
+      lot_category: "tires" | "bikes" | "other"
+      lot_status: "draft" | "published" | "archived"
+      verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +409,14 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      access_mode: ["24/7", "scheduled"],
+      app_role: ["admin", "user"],
+      client_app_status: ["new", "sent_to_host", "completed", "rejected"],
+      host_app_status: ["new", "verified", "rejected"],
+      lot_category: ["tires", "bikes", "other"],
+      lot_status: ["draft", "published", "archived"],
+      verification_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
