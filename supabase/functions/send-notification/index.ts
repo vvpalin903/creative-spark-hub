@@ -9,6 +9,7 @@ const GATEWAY_URL = 'https://connector-gateway.lovable.dev/resend'
 const BodySchema = z.object({
   type: z.enum([
     'host_application_received',
+    'host_application_approved',
     'client_application_received',
     'lot_verified',
     'client_app_to_host',
@@ -19,6 +20,7 @@ const BodySchema = z.object({
 
 const subjects: Record<string, string> = {
   host_application_received: 'Ваша заявка на размещение принята — Место рядом',
+  host_application_approved: 'Ваша заявка подтверждена — Место рядом',
   client_application_received: 'Ваша заявка на аренду принята — Место рядом',
   lot_verified: 'Ваш лот подтверждён и скоро будет опубликован — Место рядом',
   client_app_to_host: 'Новая заявка на ваш лот — Место рядом',
@@ -44,7 +46,14 @@ function buildHtml(type: string, data: Record<string, any> = {}): string {
         <h3>Здравствуйте, ${data.name || ''}!</h3>
         <p>Ваша заявка на размещение по адресу <strong>${data.address || ''}</strong> успешно принята.</p>
         <p>Мы рассмотрим её в ближайшее время и свяжемся с вами по электронной почте.</p>
-        ${data.is_mytishchi === false ? '<p style="color:#e76f51;"><strong>Обратите внимание:</strong> сервис работает в тестовом режиме, проверка объектов осуществляется пока только в границах г. Мытищи Московской области. Ваша заявка автоматически подтверждена.</p>' : ''}
+      `
+      break
+    case 'host_application_approved':
+      content = `
+        <h3>Здравствуйте, ${data.name || ''}!</h3>
+        <p>Ваша заявка на размещение по адресу <strong>${data.address || ''}</strong> <strong style="color:#2a9d8f;">подтверждена</strong>!</p>
+        <p>Ваш объект добавлен в каталог и скоро будет доступен клиентам.</p>
+        ${data.is_mytishchi === false ? '<p style="color:#e76f51;"><strong>Обратите внимание:</strong> сервис работает в тестовом режиме, проверка объектов осуществляется пока только в границах г. Мытищи Московской области.</p>' : ''}
       `
       break
     case 'client_application_received':

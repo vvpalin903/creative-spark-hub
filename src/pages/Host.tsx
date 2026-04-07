@@ -63,20 +63,33 @@ export default function Host() {
       return;
     }
 
-    // Send notification email
+    // Send notification email - "application received"
     supabase.functions.invoke("send-notification", {
       body: {
         type: "host_application_received",
         to: hostEmail,
-        data: { name: hostName, address, is_mytishchi: isMytishchi },
+        data: { name: hostName, address },
       },
     }).catch(console.error);
+
+    if (!isMytishchi) {
+      // For non-Mytishchi: send second email - "application approved"
+      setTimeout(() => {
+        supabase.functions.invoke("send-notification", {
+          body: {
+            type: "host_application_approved",
+            to: hostEmail,
+            data: { name: hostName, address, is_mytishchi: false },
+          },
+        }).catch(console.error);
+      }, 2000); // Small delay so emails arrive in order
+    }
 
     if (isMytishchi) {
       toast({ title: "Заявка отправлена!", description: "Теперь загрузите документы для верификации" });
       navigate(`/host/verification?app=${appId}&mytishchi=true`);
     } else {
-      toast({ title: "Заявка отправлена!", description: "Ваша заявка автоматически подтверждена. Сервис в тестовом режиме." });
+      toast({ title: "Заявка отправлена!", description: "Ваша заявка автоматически подтверждена." });
       navigate(`/host/verification?app=${appId}&mytishchi=false`);
     }
   };
