@@ -158,7 +158,7 @@ export default function LotDetail() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {lot.photos.map((photo, i) => (
                   <div key={i} className="aspect-[4/3] rounded-lg overflow-hidden bg-muted">
-                    <img src={photo} alt={`${lot.title} — фото ${i + 1}`} className="h-full w-full object-cover" />
+                    <img src={photo} alt={`${lot.title} — фото ${i + 1}`} className="h-full w-full object-contain bg-muted" />
                   </div>
                 ))}
               </div>

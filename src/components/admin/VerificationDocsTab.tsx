@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { FileText, ExternalLink, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
@@ -31,22 +30,29 @@ export function VerificationDocsTab() {
   const openSignedUrl = async (doc: { id: string; file_url: string }) => {
     setLoadingId(doc.id);
     try {
-      // Extract path from the public URL
       const urlParts = doc.file_url.split("/storage/v1/object/public/verification-docs/");
       const filePath = urlParts[1];
       if (!filePath) throw new Error("Invalid file path");
 
-      const { data: signData, error } = await supabase.storage
+      const { data: fileBlob, error } = await supabase.storage
         .from("verification-docs")
-        .createSignedUrl(filePath, 300); // 5 min
+        .download(filePath);
       if (error) throw error;
 
-      // Download via fetch to avoid ad-blocker blocking supabase.co URLs
-      const response = await fetch(signData.signedUrl);
-      if (!response.ok) throw new Error("Не удалось скачать файл");
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, "_blank");
+      const blobUrl = URL.createObjectURL(fileBlob);
+      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
+
+      if (!openedWindow) {
+        const link = document.createElement("a");
+        link.href = blobUrl;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
