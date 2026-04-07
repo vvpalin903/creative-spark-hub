@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { FileText, ExternalLink, Loader2 } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
 
@@ -27,7 +27,7 @@ const statusColors: Record<string, string> = {
 export function VerificationDocsTab() {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
-  const openSignedUrl = async (doc: { id: string; file_url: string }) => {
+  const downloadDocument = async (doc: { id: string; file_url: string }) => {
     setLoadingId(doc.id);
     try {
       const urlParts = doc.file_url.split("/storage/v1/object/public/verification-docs/");
@@ -40,21 +40,16 @@ export function VerificationDocsTab() {
       if (error) throw error;
 
       const blobUrl = URL.createObjectURL(fileBlob);
-      const openedWindow = window.open(blobUrl, "_blank", "noopener,noreferrer");
-
-      if (!openedWindow) {
-        const link = document.createElement("a");
-        link.href = blobUrl;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-      }
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = filePath.split("/").pop() || `document-${doc.id}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
 
       window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
     } catch (err: any) {
-      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+      toast({ title: "Ошибка скачивания", description: err.message, variant: "destructive" });
     } finally {
       setLoadingId(null);
     }
@@ -141,14 +136,14 @@ export function VerificationDocsTab() {
                     size="sm"
                     className="p-0 h-auto"
                     disabled={loadingId === doc.id}
-                    onClick={() => openSignedUrl(doc)}
+                    onClick={() => downloadDocument(doc)}
                   >
                     {loadingId === doc.id ? (
                       <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
                     ) : (
-                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                      <Download className="h-3.5 w-3.5 mr-1" />
                     )}
-                    Открыть
+                    Скачать
                   </Button>
                 </TableCell>
               </TableRow>
