@@ -256,11 +256,11 @@ export default function Host() {
                   {photos.length > 0 && (
                     <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-2">
                       {photos.map((file, i) => (
-                        <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border">
+                        <div key={i} className="relative group aspect-[4/3] rounded-lg overflow-hidden border">
                           <img
                             src={URL.createObjectURL(file)}
                             alt={`Фото ${i + 1}`}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-contain bg-muted"
                           />
                           <button
                             type="button"

@@ -1,8 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, ExternalLink } from "lucide-react";
+import { FileText, ExternalLink, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { toast } from "@/hooks/use-toast";
 
 const docTypeLabels: Record<string, string> = {
   passport: "Паспорт",
@@ -23,6 +26,28 @@ const statusColors: Record<string, string> = {
 };
 
 export function VerificationDocsTab() {
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
+  const openSignedUrl = async (doc: { id: string; file_url: string }) => {
+    setLoadingId(doc.id);
+    try {
+      // Extract path from the public URL
+      const urlParts = doc.file_url.split("/storage/v1/object/public/verification-docs/");
+      const filePath = urlParts[1];
+      if (!filePath) throw new Error("Invalid file path");
+
+      const { data, error } = await supabase.storage
+        .from("verification-docs")
+        .createSignedUrl(filePath, 300); // 5 min
+      if (error) throw error;
+      window.open(data.signedUrl, "_blank");
+    } catch (err: any) {
+      toast({ title: "Ошибка", description: err.message, variant: "destructive" });
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
   const { data: docs, isLoading } = useQuery({
     queryKey: ["admin", "verification_documents"],
     queryFn: async () => {
@@ -99,15 +124,20 @@ export function VerificationDocsTab() {
                   </span>
                 </TableCell>
                 <TableCell>
-                  <a
-                    href={doc.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto"
+                    disabled={loadingId === doc.id}
+                    onClick={() => openSignedUrl(doc)}
                   >
-                    <ExternalLink className="h-3.5 w-3.5" />
+                    {loadingId === doc.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin mr-1" />
+                    ) : (
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" />
+                    )}
                     Открыть
-                  </a>
+                  </Button>
                 </TableCell>
               </TableRow>
             );
