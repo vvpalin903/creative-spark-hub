@@ -12,6 +12,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2, LogOut, Plus, Pencil } from "lucide-react";
 import { LotFormDialog } from "@/components/admin/LotFormDialog";
 import { DocumentsTab } from "@/components/admin/DocumentsTab";
+import { VerificationDocsTab } from "@/components/admin/VerificationDocsTab";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 
 export default function Admin() {
@@ -189,6 +190,7 @@ function AdminDashboard() {
             <TabsTrigger value="client-apps">Заявки клиентов ({clientApps?.length || 0})</TabsTrigger>
             <TabsTrigger value="host-apps">Заявки хостов ({hostApps?.length || 0})</TabsTrigger>
             <TabsTrigger value="lots">Лоты ({lots?.length || 0})</TabsTrigger>
+            <TabsTrigger value="verification">Верификация</TabsTrigger>
             <TabsTrigger value="documents">Документы</TabsTrigger>
           </TabsList>
 
@@ -346,6 +348,10 @@ function AdminDashboard() {
 
           <TabsContent value="documents">
             <DocumentsTab />
+          </TabsContent>
+
+          <TabsContent value="verification">
+            <VerificationDocsTab />
           </TabsContent>
         </Tabs>
       </div>

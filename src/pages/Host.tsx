@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Check, Wallet, Users, Shield } from "lucide-react";
+import { Loader2, Check, Wallet, Users, Shield, Upload, X } from "lucide-react";
 
 const hostFaq = [
   { q: "Какие требования к месту?", a: "Место должно быть сухим, безопасным и иметь отдельный вход или возможность доступа. Подходят гаражи, кладовки, подвалы, балконы." },
@@ -22,6 +22,22 @@ const hostFaq = [
 export default function Host() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const photoRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    const valid = files.filter((f) => f.size <= 10 * 1024 * 1024);
+    if (valid.length < files.length) {
+      toast({ title: "Некоторые файлы слишком большие", description: "Максимум 10 МБ на файл", variant: "destructive" });
+    }
+    setPhotos((prev) => [...prev, ...valid].slice(0, 10));
+    if (e.target) e.target.value = "";
+  };
+
+  const removePhoto = (index: number) => {
+    setPhotos((prev) => prev.filter((_, i) => i !== index));
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -62,6 +78,22 @@ export default function Host() {
       // Geocoding failed, continue without coordinates
     }
 
+    // Upload photos to storage
+    const uploadedPhotoUrls: string[] = [];
+    for (const photo of photos) {
+      try {
+        const ext = photo.name.split(".").pop() || "jpg";
+        const filePath = `${appId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { error: upErr } = await supabase.storage.from("lot-photos").upload(filePath, photo);
+        if (!upErr) {
+          const { data: urlData } = supabase.storage.from("lot-photos").getPublicUrl(filePath);
+          uploadedPhotoUrls.push(urlData.publicUrl);
+        }
+      } catch {
+        // continue uploading others
+      }
+    }
+
     const { error } = await supabase.from("host_applications").insert({
       id: appId,
       host_name: hostName,
@@ -74,6 +106,7 @@ export default function Host() {
       category: category as any,
       access_mode: accessMode as any,
       schedule: schedule || null,
+      photos: uploadedPhotoUrls.length > 0 ? uploadedPhotoUrls : [],
     });
 
     setSubmitting(false);
@@ -207,6 +240,52 @@ export default function Host() {
                   <Label htmlFor="schedule">Расписание (если по расписанию)</Label>
                   <Textarea id="schedule" name="schedule" maxLength={500} rows={2} placeholder="Пн-Пт 9:00-21:00" />
                 </div>
+
+                {/* Photo upload */}
+                <div>
+                  <Label>Фотографии места (до 10 шт.)</Label>
+                  <p className="text-xs text-muted-foreground mb-2">Добавьте фото, чтобы ваше объявление было привлекательнее</p>
+                  <input
+                    ref={photoRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePhotoSelect}
+                  />
+                  {photos.length > 0 && (
+                    <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 mb-2">
+                      {photos.map((file, i) => (
+                        <div key={i} className="relative group aspect-square rounded-lg overflow-hidden border">
+                          <img
+                            src={URL.createObjectURL(file)}
+                            alt={`Фото ${i + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removePhoto(i)}
+                            className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {photos.length < 10 && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => photoRef.current?.click()}
+                      className="w-full"
+                    >
+                      <Upload className="h-4 w-4 mr-2" />
+                      {photos.length === 0 ? "Добавить фотографии" : `Добавить ещё (${photos.length}/10)`}
+                    </Button>
+                  )}
+                </div>
+
                 <Button type="submit" className="w-full" size="lg" disabled={submitting}>
                   {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Отправить заявку
