@@ -18,7 +18,7 @@ export function LotCard({ lot }: { lot: Tables<"lots"> }) {
       <Card className="h-full overflow-hidden transition-shadow hover:shadow-lg hover:border-primary/30">
         <div className="aspect-[4/3] bg-muted overflow-hidden">
           {photo ? (
-            <img src={photo} alt={lot.title} className="h-full w-full object-cover" />
+            <img src={photo} alt={lot.title} className="h-full w-full object-contain bg-muted" />
           ) : (
             <div className="h-full w-full flex items-center justify-center text-muted-foreground text-sm">
               Нет фото
