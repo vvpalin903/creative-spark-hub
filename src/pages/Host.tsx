@@ -22,7 +22,6 @@ const hostFaq = [
 export default function Host() {
   const navigate = useNavigate();
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -30,23 +29,27 @@ export default function Host() {
     const fd = new FormData(e.currentTarget);
     const hostName = (fd.get("host_name") as string)?.trim();
     const hostPhone = (fd.get("host_phone") as string)?.trim();
+    const hostEmail = (fd.get("host_email") as string)?.trim();
     const address = (fd.get("address") as string)?.trim();
     const placeType = (fd.get("place_type") as string)?.trim();
     const category = fd.get("category") as string;
     const accessMode = fd.get("access_mode") as string;
     const schedule = (fd.get("schedule") as string)?.trim();
 
-    if (!hostName || !hostPhone || !address) {
+    if (!hostName || !hostPhone || !address || !hostEmail) {
       toast({ title: "Ошибка", description: "Заполните обязательные поля", variant: "destructive" });
       setSubmitting(false);
       return;
     }
 
+    const isMytishchi = address.toLowerCase().includes("мытищ");
     const appId = crypto.randomUUID();
+
     const { error } = await supabase.from("host_applications").insert({
       id: appId,
       host_name: hostName,
       host_phone: hostPhone,
+      host_email: hostEmail,
       address,
       place_type: placeType || null,
       category: category as any,
@@ -57,9 +60,24 @@ export default function Host() {
     setSubmitting(false);
     if (error) {
       toast({ title: "Ошибка", description: "Не удалось отправить заявку", variant: "destructive" });
+      return;
+    }
+
+    // Send notification email
+    supabase.functions.invoke("send-notification", {
+      body: {
+        type: "host_application_received",
+        to: hostEmail,
+        data: { name: hostName, address, is_mytishchi: isMytishchi },
+      },
+    }).catch(console.error);
+
+    if (isMytishchi) {
+      toast({ title: "Заявка отправлена!", description: "Теперь загрузите документы для верификации" });
+      navigate(`/host/verification?app=${appId}&mytishchi=true`);
     } else {
-      toast({ title: "Заявка отправлена!", description: "Теперь загрузите документ для верификации" });
-      navigate(`/host/verification?app=${appId}`);
+      toast({ title: "Заявка отправлена!", description: "Ваша заявка автоматически подтверждена. Сервис в тестовом режиме." });
+      navigate(`/host/verification?app=${appId}&mytishchi=false`);
     }
   };
 
@@ -102,69 +120,66 @@ export default function Host() {
               <CardTitle>Подать заявку на размещение</CardTitle>
             </CardHeader>
             <CardContent>
-              {submitted ? (
-                <div className="text-center py-8">
-                  <Check className="h-14 w-14 text-success mx-auto mb-4" />
-                  <p className="text-xl font-semibold text-foreground">Заявка отправлена!</p>
-                  <p className="text-muted-foreground mt-2">Мы свяжемся с вами в ближайшее время для верификации</p>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="host_name">Ваше имя *</Label>
+                    <Input id="host_name" name="host_name" required maxLength={100} />
+                  </div>
+                  <div>
+                    <Label htmlFor="host_phone">Телефон *</Label>
+                    <Input id="host_phone" name="host_phone" type="tel" required maxLength={20} placeholder="+7 (___) ___-__-__" />
+                  </div>
                 </div>
-              ) : (
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="host_name">Ваше имя *</Label>
-                      <Input id="host_name" name="host_name" required maxLength={100} />
-                    </div>
-                    <div>
-                      <Label htmlFor="host_phone">Телефон *</Label>
-                      <Input id="host_phone" name="host_phone" type="tel" required maxLength={20} placeholder="+7 (___) ___-__-__" />
-                    </div>
+                <div>
+                  <Label htmlFor="host_email">Электронная почта *</Label>
+                  <Input id="host_email" name="host_email" type="email" required maxLength={255} placeholder="email@example.com" />
+                  <p className="text-xs text-muted-foreground mt-1">Координация будет осуществляться по электронной почте</p>
+                </div>
+                <div>
+                  <Label htmlFor="address">Адрес *</Label>
+                  <Input id="address" name="address" required maxLength={255} placeholder="Начните вводить адрес..." />
+                </div>
+                <div>
+                  <Label htmlFor="place_type">Тип места</Label>
+                  <Input id="place_type" name="place_type" maxLength={100} placeholder="Гараж, кладовка, подвал..." />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="category">Категория</Label>
+                    <Select name="category" defaultValue="other">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="tires">Шины</SelectItem>
+                        <SelectItem value="bikes">Велосипеды</SelectItem>
+                        <SelectItem value="other">Другое</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div>
-                    <Label htmlFor="address">Адрес *</Label>
-                    <Input id="address" name="address" required maxLength={255} placeholder="Начните вводить адрес..." />
+                    <Label htmlFor="access_mode">Режим доступа</Label>
+                    <Select name="access_mode" defaultValue="24/7">
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="24/7">24/7</SelectItem>
+                        <SelectItem value="scheduled">По расписанию</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                  <div>
-                    <Label htmlFor="place_type">Тип места</Label>
-                    <Input id="place_type" name="place_type" maxLength={100} placeholder="Гараж, кладовка, подвал..." />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="category">Категория</Label>
-                      <Select name="category" defaultValue="other">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="tires">Шины</SelectItem>
-                          <SelectItem value="bikes">Велосипеды</SelectItem>
-                          <SelectItem value="other">Другое</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label htmlFor="access_mode">Режим доступа</Label>
-                      <Select name="access_mode" defaultValue="24/7">
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="24/7">24/7</SelectItem>
-                          <SelectItem value="scheduled">По расписанию</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                  <div>
-                    <Label htmlFor="schedule">Расписание (если по расписанию)</Label>
-                    <Textarea id="schedule" name="schedule" maxLength={500} rows={2} placeholder="Пн-Пт 9:00-21:00" />
-                  </div>
-                  <Button type="submit" className="w-full" size="lg" disabled={submitting}>
-                    {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Отправить заявку
-                  </Button>
-                </form>
-              )}
+                </div>
+                <div>
+                  <Label htmlFor="schedule">Расписание (если по расписанию)</Label>
+                  <Textarea id="schedule" name="schedule" maxLength={500} rows={2} placeholder="Пн-Пт 9:00-21:00" />
+                </div>
+                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Отправить заявку
+                </Button>
+              </form>
             </CardContent>
           </Card>
         </div>
