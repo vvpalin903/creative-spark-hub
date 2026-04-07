@@ -67,6 +67,7 @@ export default function LotDetail() {
       category,
       desired_date: desiredDate || null,
       comment: comment || null,
+      status: "sent_to_host" as any,
     });
 
     setSubmitting(false);
