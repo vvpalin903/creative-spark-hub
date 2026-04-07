@@ -46,20 +46,24 @@ export default function LotDetail() {
     const formData = new FormData(e.currentTarget);
     const clientName = (formData.get("client_name") as string)?.trim();
     const clientPhone = (formData.get("client_phone") as string)?.trim();
+    const clientEmail = (formData.get("client_email") as string)?.trim();
     const category = formData.get("category") as Enums<"lot_category"> | null;
     const desiredDate = formData.get("desired_date") as string;
     const comment = (formData.get("comment") as string)?.trim();
 
-    if (!clientName || !clientPhone) {
-      toast({ title: "Ошибка", description: "Заполните имя и телефон", variant: "destructive" });
+    if (!clientName || !clientPhone || !clientEmail) {
+      toast({ title: "Ошибка", description: "Заполните имя, телефон и email", variant: "destructive" });
       setSubmitting(false);
       return;
     }
 
+    const appId = crypto.randomUUID();
     const { error } = await supabase.from("client_applications").insert({
+      id: appId,
       lot_id: id!,
       client_name: clientName,
       client_phone: clientPhone,
+      client_email: clientEmail,
       category,
       desired_date: desiredDate || null,
       comment: comment || null,
@@ -68,9 +72,47 @@ export default function LotDetail() {
     setSubmitting(false);
     if (error) {
       toast({ title: "Ошибка", description: "Не удалось отправить заявку", variant: "destructive" });
-    } else {
-      setSubmitted(true);
-      toast({ title: "Заявка отправлена!", description: "Мы свяжемся с вами в ближайшее время" });
+      return;
+    }
+
+    setSubmitted(true);
+    toast({ title: "Заявка отправлена!", description: "Мы свяжемся с вами по электронной почте" });
+
+    // Send confirmation to client
+    supabase.functions.invoke("send-notification", {
+      body: {
+        type: "client_application_received",
+        to: clientEmail,
+        data: {
+          name: clientName,
+          lot_title: lot?.title,
+          is_mytishchi: lot?.is_mytishchi,
+        },
+      },
+    }).catch(console.error);
+
+    // Send notification to host if lot has host_email
+    if (lot?.host_email) {
+      const hideUrl = `${window.location.origin}/api/hide-lot?token=${lot.hide_token}`;
+      // Use edge function URL for hide-lot
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const hideLotUrl = `https://${projectId}.supabase.co/functions/v1/hide-lot?token=${lot.hide_token}`;
+
+      supabase.functions.invoke("send-notification", {
+        body: {
+          type: "client_app_to_host",
+          to: lot.host_email,
+          data: {
+            client_name: clientName,
+            client_email: clientEmail,
+            client_phone: clientPhone,
+            lot_title: lot.title,
+            comment: comment || null,
+            desired_date: desiredDate || null,
+            hide_url: hideLotUrl,
+          },
+        },
+      }).catch(console.error);
     }
   };
 
@@ -97,6 +139,16 @@ export default function LotDetail() {
   return (
     <Layout>
       <div className="container py-8">
+        {/* Test mode warning for non-Mytishchi lots */}
+        {!lot.is_mytishchi && (
+          <div className="p-4 rounded-lg bg-warning/10 border border-warning/30 mb-6">
+            <p className="text-sm text-foreground">
+              <AlertTriangle className="inline h-4 w-4 mr-1 text-warning" />
+              <strong>Тестовый режим:</strong> Сервис «Место рядом» работает в тестовом режиме. Проверка объектов осуществляется пока только в границах города Мытищи Московской области.
+            </p>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-6">
@@ -191,7 +243,7 @@ export default function LotDetail() {
                   <div className="text-center py-6">
                     <Check className="h-12 w-12 text-success mx-auto mb-3" />
                     <p className="font-semibold text-foreground">Заявка отправлена!</p>
-                    <p className="text-sm text-muted-foreground mt-1">Мы свяжемся с вами в ближайшее время</p>
+                    <p className="text-sm text-muted-foreground mt-1">Мы свяжемся с вами по электронной почте</p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -202,6 +254,11 @@ export default function LotDetail() {
                     <div>
                       <Label htmlFor="client_phone">Телефон *</Label>
                       <Input id="client_phone" name="client_phone" type="tel" required maxLength={20} placeholder="+7 (___) ___-__-__" />
+                    </div>
+                    <div>
+                      <Label htmlFor="client_email">Электронная почта *</Label>
+                      <Input id="client_email" name="client_email" type="email" required maxLength={255} placeholder="email@example.com" />
+                      <p className="text-xs text-muted-foreground mt-1">Координация будет осуществляться по электронной почте</p>
                     </div>
                     <div>
                       <Label htmlFor="category">Что хотите хранить</Label>

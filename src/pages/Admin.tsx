@@ -200,6 +200,7 @@ function AdminDashboard() {
                     <TableHead>Дата</TableHead>
                     <TableHead>Имя</TableHead>
                     <TableHead>Телефон</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Категория</TableHead>
                     <TableHead>Дата начала</TableHead>
                     <TableHead>Комментарий</TableHead>
@@ -212,6 +213,7 @@ function AdminDashboard() {
                       <TableCell className="text-sm">{new Date(app.created_at).toLocaleDateString("ru-RU")}</TableCell>
                       <TableCell>{app.client_name}</TableCell>
                       <TableCell>{app.client_phone}</TableCell>
+                      <TableCell className="max-w-[150px] truncate">{(app as any).client_email || "—"}</TableCell>
                       <TableCell>{app.category || "—"}</TableCell>
                       <TableCell>{app.desired_date || "—"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{app.comment || "—"}</TableCell>
@@ -232,7 +234,7 @@ function AdminDashboard() {
                   ))}
                   {(!clientApps || clientApps.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
@@ -248,6 +250,7 @@ function AdminDashboard() {
                     <TableHead>Дата</TableHead>
                     <TableHead>Имя</TableHead>
                     <TableHead>Телефон</TableHead>
+                    <TableHead>Email</TableHead>
                     <TableHead>Адрес</TableHead>
                     <TableHead>Тип</TableHead>
                     <TableHead>Категория</TableHead>
@@ -260,6 +263,7 @@ function AdminDashboard() {
                       <TableCell className="text-sm">{new Date(app.created_at).toLocaleDateString("ru-RU")}</TableCell>
                       <TableCell>{app.host_name}</TableCell>
                       <TableCell>{app.host_phone}</TableCell>
+                      <TableCell className="max-w-[150px] truncate">{(app as any).host_email || "—"}</TableCell>
                       <TableCell className="max-w-[200px] truncate">{app.address}</TableCell>
                       <TableCell>{app.place_type || "—"}</TableCell>
                       <TableCell>{app.category}</TableCell>
@@ -279,7 +283,7 @@ function AdminDashboard() {
                   ))}
                   {(!hostApps || hostApps.length === 0) && (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
+                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
                     </TableRow>
                   )}
                 </TableBody>
