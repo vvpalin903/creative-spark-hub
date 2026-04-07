@@ -17,6 +17,7 @@ export type Database = {
       client_applications: {
         Row: {
           category: Database["public"]["Enums"]["lot_category"] | null
+          client_email: string | null
           client_name: string
           client_phone: string
           comment: string | null
@@ -29,6 +30,7 @@ export type Database = {
         }
         Insert: {
           category?: Database["public"]["Enums"]["lot_category"] | null
+          client_email?: string | null
           client_name: string
           client_phone: string
           comment?: string | null
@@ -41,6 +43,7 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["lot_category"] | null
+          client_email?: string | null
           client_name?: string
           client_phone?: string
           comment?: string | null
@@ -67,6 +70,7 @@ export type Database = {
           address: string
           category: Database["public"]["Enums"]["lot_category"]
           created_at: string
+          host_email: string | null
           host_name: string
           host_phone: string
           id: string
@@ -84,6 +88,7 @@ export type Database = {
           address: string
           category?: Database["public"]["Enums"]["lot_category"]
           created_at?: string
+          host_email?: string | null
           host_name: string
           host_phone: string
           id?: string
@@ -101,6 +106,7 @@ export type Database = {
           address?: string
           category?: Database["public"]["Enums"]["lot_category"]
           created_at?: string
+          host_email?: string | null
           host_name?: string
           host_phone?: string
           id?: string
@@ -123,6 +129,8 @@ export type Database = {
           category: Database["public"]["Enums"]["lot_category"]
           created_at: string
           description: string | null
+          hide_token: string | null
+          host_email: string | null
           host_id: string | null
           id: string
           is_mytishchi: boolean
@@ -143,6 +151,8 @@ export type Database = {
           category?: Database["public"]["Enums"]["lot_category"]
           created_at?: string
           description?: string | null
+          hide_token?: string | null
+          host_email?: string | null
           host_id?: string | null
           id?: string
           is_mytishchi?: boolean
@@ -163,6 +173,8 @@ export type Database = {
           category?: Database["public"]["Enums"]["lot_category"]
           created_at?: string
           description?: string | null
+          hide_token?: string | null
+          host_email?: string | null
           host_id?: string | null
           id?: string
           is_mytishchi?: boolean
