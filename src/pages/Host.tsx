@@ -45,12 +45,31 @@ export default function Host() {
     const isMytishchi = address.toLowerCase().includes("мытищ");
     const appId = crypto.randomUUID();
 
+    // Geocode address via Yandex
+    let lat: number | null = null;
+    let lng: number | null = null;
+    try {
+      const geocodeUrl = `https://geocode-maps.yandex.ru/1.x/?apikey=5704dc84-6009-4a48-99ec-17cec1934c65&format=json&geocode=${encodeURIComponent(address)}`;
+      const geoRes = await fetch(geocodeUrl);
+      const geoData = await geoRes.json();
+      const pos = geoData?.response?.GeoObjectCollection?.featureMember?.[0]?.GeoObject?.Point?.pos;
+      if (pos) {
+        const [lngStr, latStr] = pos.split(" ");
+        lat = parseFloat(latStr);
+        lng = parseFloat(lngStr);
+      }
+    } catch {
+      // Geocoding failed, continue without coordinates
+    }
+
     const { error } = await supabase.from("host_applications").insert({
       id: appId,
       host_name: hostName,
       host_phone: hostPhone,
       host_email: hostEmail,
       address,
+      lat,
+      lng,
       place_type: placeType || null,
       category: category as any,
       access_mode: accessMode as any,
