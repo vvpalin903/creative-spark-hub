@@ -59,7 +59,7 @@ export default function Host() {
       toast({ title: "Ошибка", description: "Не удалось отправить заявку", variant: "destructive" });
     } else {
       toast({ title: "Заявка отправлена!", description: "Теперь загрузите документ для верификации" });
-      navigate(`/host/verification?app=${data.id}`);
+      navigate(`/host/verification?app=${appId}`);
     }
   };
 
