@@ -92,15 +92,6 @@ export function YandexMap({
             const placemark = new ymaps.Placemark(
               [point.lat, point.lng],
               {
-                balloonContentHeader: point.title,
-                balloonContentBody: `
-                  <div style="font-family: Inter, sans-serif;">
-                    <p style="margin: 4px 0; color: #666;">${categoryLabels[point.category] || point.category}</p>
-                    <p style="margin: 4px 0; font-weight: bold; color: #0d9488; font-size: 16px;">
-                      ${point.price.toLocaleString("ru-RU")} ₽/мес
-                    </p>
-                  </div>
-                `,
                 hintContent: `${point.title} — ${point.price.toLocaleString("ru-RU")} ₽/мес`,
               },
               {
@@ -109,7 +100,10 @@ export function YandexMap({
             );
 
             if (onPointClick) {
-              placemark.events.add("click", () => onPointClick(point.id));
+              placemark.events.add("click", (e: any) => {
+                e.get("target").options.set("balloonAutoPan", false);
+                onPointClick(point.id);
+              });
             }
 
             return placemark;
