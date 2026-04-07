@@ -49,6 +49,55 @@ const categoryLabels: Record<string, string> = {
   other: "Другое",
 };
 
+function escapeHtml(value: string) {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function groupPointsByCoordinates(points: MapPoint[]) {
+  const groups = new Map<string, MapPoint[]>();
+
+  points.forEach((point) => {
+    const key = `${point.lat.toFixed(6)}:${point.lng.toFixed(6)}`;
+    const current = groups.get(key) ?? [];
+    current.push(point);
+    groups.set(key, current);
+  });
+
+  return Array.from(groups.values());
+}
+
+function buildGroupBalloonContent(points: MapPoint[]) {
+  const items = points
+    .map((point) => {
+      const title = escapeHtml(point.title);
+      const category = escapeHtml(categoryLabels[point.category] ?? point.category);
+      const price = point.price.toLocaleString("ru-RU");
+
+      return `
+        <a
+          href="/lot/${point.id}"
+          style="display:block;padding:12px 0;text-decoration:none;color:#111827;border-bottom:1px solid #e5e7eb;"
+        >
+          <div style="font-size:14px;font-weight:600;margin-bottom:4px;">${title}</div>
+          <div style="font-size:12px;color:#6b7280;">${category} · ${price} ₽/мес</div>
+        </a>
+      `;
+    })
+    .join("");
+
+  return `
+    <div style="min-width:260px;max-width:320px;padding:4px 0;">
+      <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Доступные объявления</div>
+      ${items}
+    </div>
+  `;
+}
+
 export function YandexMap({
   points = [],
   center = [55.9116, 37.7308], // Мытищи
@@ -86,23 +135,34 @@ export function YandexMap({
             preset: "islands#greenClusterIcons",
             groupByCoordinates: false,
             clusterDisableClickZoom: false,
+            clusterOpenBalloonOnClick: false,
           });
 
-          const placemarks = points.map((point) => {
+          const placemarks = groupPointsByCoordinates(points).map((group) => {
+            const [firstPoint] = group;
+            const isGroup = group.length > 1;
+
             const placemark = new ymaps.Placemark(
-              [point.lat, point.lng],
+              [firstPoint.lat, firstPoint.lng],
+              isGroup
+                ? {
+                    hintContent: `${group.length} объявлений по этому адресу`,
+                    balloonContentBody: buildGroupBalloonContent(group),
+                    iconContent: String(group.length),
+                  }
+                : {
+                    hintContent: `${firstPoint.title} — ${firstPoint.price.toLocaleString("ru-RU")} ₽/мес`,
+                  },
               {
-                hintContent: `${point.title} — ${point.price.toLocaleString("ru-RU")} ₽/мес`,
-              },
-              {
-                preset: "islands#greenDotIcon",
-                hasBalloon: false,
+                preset: isGroup ? "islands#greenStretchyIcon" : "islands#greenDotIcon",
+                hasBalloon: isGroup,
+                hideIconOnBalloonOpen: false,
               }
             );
 
-            if (onPointClick) {
+            if (!isGroup && onPointClick) {
               placemark.events.add("click", () => {
-                onPointClick(point.id);
+                onPointClick(firstPoint.id);
               });
             }
 
