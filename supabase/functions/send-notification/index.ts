@@ -127,7 +127,11 @@ Deno.serve(async (req) => {
 
     const result = await response.json()
     if (!response.ok) {
-      throw new Error(`Resend API error [${response.status}]: ${JSON.stringify(result)}`)
+      console.error(`Resend API error [${response.status}]:`, result)
+      // Return 200 with warning instead of 500 — email is best-effort
+      return new Response(JSON.stringify({ success: false, warning: `Email not sent: ${result?.message || response.status}` }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
     }
 
     return new Response(JSON.stringify({ success: true }), {
