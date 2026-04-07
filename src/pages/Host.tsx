@@ -42,7 +42,9 @@ export default function Host() {
       return;
     }
 
-    const { data, error } = await supabase.from("host_applications").insert({
+    const appId = crypto.randomUUID();
+    const { error } = await supabase.from("host_applications").insert({
+      id: appId,
       host_name: hostName,
       host_phone: hostPhone,
       address,
@@ -50,7 +52,7 @@ export default function Host() {
       category: category as any,
       access_mode: accessMode as any,
       schedule: schedule || null,
-    }).select("id").single();
+    });
 
     setSubmitting(false);
     if (error) {
