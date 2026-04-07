@@ -96,12 +96,12 @@ export function YandexMap({
               },
               {
                 preset: "islands#greenDotIcon",
+                hasBalloon: false,
               }
             );
 
             if (onPointClick) {
-              placemark.events.add("click", (e: any) => {
-                e.get("target").options.set("balloonAutoPan", false);
+              placemark.events.add("click", () => {
                 onPointClick(point.id);
               });
             }
