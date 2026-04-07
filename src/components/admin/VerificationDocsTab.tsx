@@ -36,11 +36,17 @@ export function VerificationDocsTab() {
       const filePath = urlParts[1];
       if (!filePath) throw new Error("Invalid file path");
 
-      const { data, error } = await supabase.storage
+      const { data: signData, error } = await supabase.storage
         .from("verification-docs")
         .createSignedUrl(filePath, 300); // 5 min
       if (error) throw error;
-      window.open(data.signedUrl, "_blank");
+
+      // Download via fetch to avoid ad-blocker blocking supabase.co URLs
+      const response = await fetch(signData.signedUrl);
+      if (!response.ok) throw new Error("Не удалось скачать файл");
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
     } catch (err: any) {
       toast({ title: "Ошибка", description: err.message, variant: "destructive" });
     } finally {
