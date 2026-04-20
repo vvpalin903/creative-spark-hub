@@ -46,8 +46,9 @@ export function useUnreadMessages() {
   // Realtime: any new message → recompute
   useEffect(() => {
     if (!user) return;
+    const channelName = `unread-listener:${user.id}:${Math.random().toString(36).slice(2, 8)}`;
     const channel = supabase
-      .channel("unread-listener")
+      .channel(channelName)
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, () => {
         queryClient.invalidateQueries({ queryKey: ["unread-counts"] });
       })
