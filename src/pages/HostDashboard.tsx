@@ -251,11 +251,21 @@ function HistoryTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("placements")
-        .select("*, host_objects(title, address), booking_requests(client_name, client_user_id)")
+        .select("*, host_objects(title, address)")
         .eq("host_user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data;
+      // Fetch client names from profiles
+      const clientIds = Array.from(new Set((data || []).map((p) => p.client_user_id).filter(Boolean) as string[]));
+      let clientNames: Record<string, string> = {};
+      if (clientIds.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name")
+          .in("user_id", clientIds);
+        clientNames = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "Клиент"]));
+      }
+      return (data || []).map((p) => ({ ...p, client_name: p.client_user_id ? clientNames[p.client_user_id] || "Клиент" : "Клиент" }));
     },
     enabled: !!user,
   });
