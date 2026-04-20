@@ -31,7 +31,7 @@ export function HostRating({ hostUserId, className }: Props) {
 
   return (
     <span className={`inline-flex items-center gap-1 text-sm ${className || ""}`}>
-      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+      <Star className="h-4 w-4 fill-warning text-warning" />
       <strong className="font-semibold">{avg.toFixed(1)}</strong>
       <span className="text-muted-foreground">
         ({count} {pluralReviews(count)})

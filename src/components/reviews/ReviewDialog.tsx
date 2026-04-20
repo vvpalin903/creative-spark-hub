@@ -83,7 +83,7 @@ export function ReviewDialog({ open, onOpenChange, placementId, rateeUserId, rat
                     <Star
                       className={cn(
                         "h-7 w-7 transition-colors",
-                        filled ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"
+                        filled ? "fill-warning text-warning" : "text-muted-foreground/40"
                       )}
                     />
                   </button>
