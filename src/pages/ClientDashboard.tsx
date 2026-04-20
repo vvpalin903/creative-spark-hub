@@ -10,6 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Inbox, History, ShieldCheck, Search, MessageCircle } from "lucide-react";
 import { bookingRequestStatusColors, bookingRequestStatusLabels, placementStatusLabels } from "@/lib/labels";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
+import { CancelRequestButton } from "@/components/CancelRequestButton";
+import { ReviewButton } from "@/components/reviews/ReviewButton";
 
 const sections = [
   { to: "/dashboard/client", label: "Активные", icon: Inbox },
