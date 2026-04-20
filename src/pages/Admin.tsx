@@ -8,11 +8,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Plus, Pencil } from "lucide-react";
-import { LotFormDialog } from "@/components/admin/LotFormDialog";
+import { Loader2, LogOut, Pencil } from "lucide-react";
+import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { DocumentsTab } from "@/components/admin/DocumentsTab";
 import { VerificationDocsTab } from "@/components/admin/VerificationDocsTab";
+import {
+  bookingRequestStatusLabels,
+  objectStatusColors,
+  objectStatusLabels,
+  objectVerificationStatusLabels,
+  userVerificationStatusLabels,
+} from "@/lib/labels";
 import type { Enums, Tables } from "@/integrations/supabase/types";
 
 export default function Admin() {
@@ -120,59 +128,6 @@ export default function Admin() {
 }
 
 function AdminDashboard() {
-  const queryClient = useQueryClient();
-  const [lotFormOpen, setLotFormOpen] = useState(false);
-  const [editingLot, setEditingLot] = useState<Tables<"lots"> | null>(null);
-
-  const { data: clientApps } = useQuery({
-    queryKey: ["admin", "client_applications"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("client_applications").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: hostApps } = useQuery({
-    queryKey: ["admin", "host_applications"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("host_applications").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: lots } = useQuery({
-    queryKey: ["admin", "lots"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("lots").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const updateClientStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("client_applications").update({ status: status as any }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "client_applications"] });
-      toast({ title: "Статус обновлён" });
-    },
-  });
-
-  const updateHostStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("host_applications").update({ status: status as any }).eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin", "host_applications"] });
-      toast({ title: "Статус обновлён" });
-    },
-  });
-
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
@@ -185,184 +140,283 @@ function AdminDashboard() {
       </header>
 
       <div className="container py-6">
-        <Tabs defaultValue="client-apps">
+        <Tabs defaultValue="objects">
           <TabsList className="mb-6 flex-wrap">
-            <TabsTrigger value="client-apps">Заявки клиентов ({clientApps?.length || 0})</TabsTrigger>
-            <TabsTrigger value="host-apps">Заявки хостов ({hostApps?.length || 0})</TabsTrigger>
-            <TabsTrigger value="lots">Лоты ({lots?.length || 0})</TabsTrigger>
-            <TabsTrigger value="verification">Верификация</TabsTrigger>
-            <TabsTrigger value="documents">Документы</TabsTrigger>
+            <TabsTrigger value="objects">Объекты</TabsTrigger>
+            <TabsTrigger value="requests">Заявки</TabsTrigger>
+            <TabsTrigger value="users">Пользователи</TabsTrigger>
+            <TabsTrigger value="verification">Документы хостов</TabsTrigger>
+            <TabsTrigger value="documents">Сайт-доки</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="client-apps">
-            <div className="rounded-lg border overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Дата</TableHead>
-                    <TableHead>Имя</TableHead>
-                    <TableHead>Телефон</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Категория</TableHead>
-                    <TableHead>Дата начала</TableHead>
-                    <TableHead>Комментарий</TableHead>
-                    <TableHead>Статус</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {clientApps?.map((app) => (
-                    <TableRow key={app.id}>
-                      <TableCell className="text-sm">{new Date(app.created_at).toLocaleDateString("ru-RU")}</TableCell>
-                      <TableCell>{app.client_name}</TableCell>
-                      <TableCell>{app.client_phone}</TableCell>
-                      <TableCell className="max-w-[150px] truncate">{(app as any).client_email || "—"}</TableCell>
-                      <TableCell>{app.category || "—"}</TableCell>
-                      <TableCell>{app.desired_date || "—"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{app.comment || "—"}</TableCell>
-                      <TableCell>
-                        <Select value={app.status} onValueChange={(v) => updateClientStatus.mutate({ id: app.id, status: v })}>
-                          <SelectTrigger className="w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">Новая</SelectItem>
-                            <SelectItem value="sent_to_host">Передана хосту</SelectItem>
-                            <SelectItem value="completed">Завершена</SelectItem>
-                            <SelectItem value="rejected">Отказ</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!clientApps || clientApps.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="host-apps">
-            <div className="rounded-lg border overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Дата</TableHead>
-                    <TableHead>Имя</TableHead>
-                    <TableHead>Телефон</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Адрес</TableHead>
-                    <TableHead>Тип</TableHead>
-                    <TableHead>Категория</TableHead>
-                    <TableHead>Статус</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {hostApps?.map((app) => (
-                    <TableRow key={app.id}>
-                      <TableCell className="text-sm">{new Date(app.created_at).toLocaleDateString("ru-RU")}</TableCell>
-                      <TableCell>{app.host_name}</TableCell>
-                      <TableCell>{app.host_phone}</TableCell>
-                      <TableCell className="max-w-[150px] truncate">{(app as any).host_email || "—"}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{app.address}</TableCell>
-                      <TableCell>{app.place_type || "—"}</TableCell>
-                      <TableCell>{app.category}</TableCell>
-                      <TableCell>
-                        <Select value={app.status} onValueChange={(v) => updateHostStatus.mutate({ id: app.id, status: v })}>
-                          <SelectTrigger className="w-[160px]">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="new">Новая</SelectItem>
-                            <SelectItem value="verified">Верифицирован</SelectItem>
-                            <SelectItem value="rejected">Отклонена</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!hostApps || hostApps.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="lots">
-            <div className="flex justify-end mb-4">
-              <Button onClick={() => { setEditingLot(null); setLotFormOpen(true); }}>
-                <Plus className="h-4 w-4 mr-2" /> Создать лот
-              </Button>
-            </div>
-            <div className="rounded-lg border overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Название</TableHead>
-                    <TableHead>Адрес</TableHead>
-                    <TableHead>Категория</TableHead>
-                    <TableHead>Цена</TableHead>
-                    <TableHead>Мытищи</TableHead>
-                    <TableHead>Статус</TableHead>
-                    <TableHead></TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {lots?.map((lot) => (
-                    <TableRow key={lot.id}>
-                      <TableCell>{lot.title}</TableCell>
-                      <TableCell className="max-w-[200px] truncate">{lot.address}</TableCell>
-                      <TableCell>{lot.category}</TableCell>
-                      <TableCell>{lot.price_monthly.toLocaleString("ru-RU")} ₽</TableCell>
-                      <TableCell>{lot.is_mytishchi ? "Да" : "Нет"}</TableCell>
-                      <TableCell>
-                        <span className={`text-xs font-medium px-2 py-1 rounded ${
-                          lot.status === "published" ? "bg-primary/10 text-primary" :
-                          lot.status === "archived" ? "bg-muted text-muted-foreground" :
-                          "bg-accent text-accent-foreground"
-                        }`}>
-                          {lot.status === "published" ? "Опубликован" : lot.status === "archived" ? "Архив" : "Черновик"}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <Button variant="ghost" size="sm" onClick={() => { setEditingLot(lot); setLotFormOpen(true); }}>
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                  {(!lots || lots.length === 0) && (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет лотов</TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-          </TabsContent>
-
-          <TabsContent value="documents">
-            <DocumentsTab />
-          </TabsContent>
-
-          <TabsContent value="verification">
-            <VerificationDocsTab />
-          </TabsContent>
+          <TabsContent value="objects"><ObjectsTab /></TabsContent>
+          <TabsContent value="requests"><RequestsTab /></TabsContent>
+          <TabsContent value="users"><UsersTab /></TabsContent>
+          <TabsContent value="verification"><VerificationDocsTab /></TabsContent>
+          <TabsContent value="documents"><DocumentsTab /></TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
 
-      {lotFormOpen && (
-        <LotFormDialog
-          open={lotFormOpen}
-          onOpenChange={setLotFormOpen}
-          lot={editingLot}
-        />
-      )}
+/* -------- Objects -------- */
+function ObjectsTab() {
+  const queryClient = useQueryClient();
+  const [editing, setEditing] = useState<Tables<"host_objects"> | null>(null);
+  const [open, setOpen] = useState(false);
+
+  const { data: objects } = useQuery({
+    queryKey: ["admin", "host_objects"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("host_objects")
+        .select("*, storage_slots(id, price_monthly, category)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("host_objects")
+        .update({ object_status: status as any })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "host_objects"] });
+      toast({ title: "Статус обновлён" });
+    },
+  });
+
+  const updateVerification = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("host_objects")
+        .update({ verification_status: status as any })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "host_objects"] });
+      toast({ title: "Верификация обновлена" });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Дата</TableHead>
+              <TableHead>Название</TableHead>
+              <TableHead>Адрес</TableHead>
+              <TableHead>Слотов</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead>Верификация</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {objects?.map((o: any) => (
+              <TableRow key={o.id}>
+                <TableCell className="text-sm">{new Date(o.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell className="max-w-[220px] truncate">{o.title}</TableCell>
+                <TableCell className="max-w-[260px] truncate text-sm">{o.city ? `${o.city}, ` : ""}{o.address}</TableCell>
+                <TableCell>{o.storage_slots?.length || 0}</TableCell>
+                <TableCell>
+                  <Select value={o.object_status} onValueChange={(v) => updateStatus.mutate({ id: o.id, status: v })}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(objectStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Select value={o.verification_status} onValueChange={(v) => updateVerification.mutate({ id: o.id, status: v })}>
+                    <SelectTrigger className="w-[160px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(objectVerificationStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => { setEditing(o); setOpen(true); }}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!objects || objects.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет объектов</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+      {open && <HostObjectFormDialog open={open} onOpenChange={setOpen} object={editing} />}
+    </div>
+  );
+}
+
+/* -------- Requests -------- */
+function RequestsTab() {
+  const queryClient = useQueryClient();
+  const { data: requests } = useQuery({
+    queryKey: ["admin", "booking_requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("booking_requests")
+        .select("*, host_objects(title, address)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("booking_requests").update({ request_status: status as any }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "booking_requests"] });
+      toast({ title: "Статус обновлён" });
+    },
+  });
+
+  return (
+    <div className="rounded-lg border overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Дата</TableHead>
+            <TableHead>Объект</TableHead>
+            <TableHead>Клиент</TableHead>
+            <TableHead>Контакты</TableHead>
+            <TableHead>Период</TableHead>
+            <TableHead>Статус</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests?.map((r: any) => (
+            <TableRow key={r.id}>
+              <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+              <TableCell>
+                <div className="font-medium">{r.host_objects?.title || "—"}</div>
+                <div className="text-xs text-muted-foreground truncate max-w-[200px]">{r.host_objects?.address}</div>
+              </TableCell>
+              <TableCell>{r.client_name}</TableCell>
+              <TableCell className="text-xs">
+                <div>{r.client_phone}</div>
+                <div className="text-muted-foreground">{r.client_email}</div>
+              </TableCell>
+              <TableCell className="text-sm">{r.start_date || "?"} → {r.end_date || "?"}</TableCell>
+              <TableCell>
+                <Select value={r.request_status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+            </TableRow>
+          ))}
+          {(!requests || requests.length === 0) && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+/* -------- Users -------- */
+function UsersTab() {
+  const { data: profiles } = useQuery({
+    queryKey: ["admin", "profiles"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: roles } = useQuery({
+    queryKey: ["admin", "user_roles"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("user_roles").select("*");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const rolesByUser = (roles || []).reduce<Record<string, string[]>>((acc, r) => {
+    acc[r.user_id] = [...(acc[r.user_id] || []), r.role];
+    return acc;
+  }, {});
+
+  return (
+    <div className="rounded-lg border overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Дата</TableHead>
+            <TableHead>Имя</TableHead>
+            <TableHead>Email</TableHead>
+            <TableHead>Телефон</TableHead>
+            <TableHead>Роли</TableHead>
+            <TableHead>Верификация</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {profiles?.map((p) => (
+            <TableRow key={p.id}>
+              <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
+              <TableCell>{p.name || "—"}</TableCell>
+              <TableCell className="text-sm">{p.email || "—"}</TableCell>
+              <TableCell className="text-sm">{p.phone || "—"}</TableCell>
+              <TableCell className="text-xs">
+                <div className="flex gap-1 flex-wrap">
+                  {(rolesByUser[p.user_id] || []).map((r) => (
+                    <Badge key={r} variant="secondary">{r}</Badge>
+                  ))}
+                </div>
+              </TableCell>
+              <TableCell>
+                <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
+                  {userVerificationStatusLabels[p.verification_status]}
+                </span>
+              </TableCell>
+            </TableRow>
+          ))}
+          {(!profiles || profiles.length === 0) && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

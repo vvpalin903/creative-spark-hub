@@ -18,9 +18,11 @@ export default function Auth() {
   const navigate = useNavigate();
   const [params] = useSearchParams();
   const next = params.get("next") || "/dashboard";
+  const initialRole = (params.get("role") === "host" ? "host" : "client") as "host" | "client";
+  const initialTab: "signin" | "signup" = params.get("role") ? "signup" : "signin";
   const { session, loading } = useAuth();
 
-  const [tab, setTab] = useState<"signin" | "signup">("signin");
+  const [tab, setTab] = useState<"signin" | "signup">(initialTab);
 
   // signin
   const [siEmail, setSiEmail] = useState("");
@@ -32,7 +34,7 @@ export default function Auth() {
   const [suEmail, setSuEmail] = useState("");
   const [suPhone, setSuPhone] = useState("");
   const [suPassword, setSuPassword] = useState("");
-  const [suRole, setSuRole] = useState<"host" | "client">("client");
+  const [suRole, setSuRole] = useState<"host" | "client">(initialRole);
   const [suBusy, setSuBusy] = useState(false);
 
   useEffect(() => {

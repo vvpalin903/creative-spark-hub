@@ -67,20 +67,19 @@ export function VerificationDocsTab() {
     },
   });
 
-  const { data: hostApps } = useQuery({
-    queryKey: ["admin", "host_applications"],
+  const { data: profiles } = useQuery({
+    queryKey: ["admin", "profiles_for_docs"],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("host_applications")
-        .select("*")
-        .order("created_at", { ascending: false });
+        .from("profiles")
+        .select("user_id, name, email, phone");
       if (error) throw error;
       return data;
     },
   });
 
-  const hostAppMap = new Map(
-    (hostApps || []).map((app) => [app.id, app])
+  const profileMap = new Map(
+    (profiles || []).map((p) => [p.user_id, p])
   );
 
   if (isLoading) {
@@ -93,7 +92,7 @@ export function VerificationDocsTab() {
         <TableHeader>
           <TableRow>
             <TableHead>Дата</TableHead>
-            <TableHead>Заявка (хост)</TableHead>
+            <TableHead>Пользователь</TableHead>
             <TableHead>Тип документа</TableHead>
             <TableHead>Статус</TableHead>
             <TableHead>Файл</TableHead>
@@ -101,18 +100,18 @@ export function VerificationDocsTab() {
         </TableHeader>
         <TableBody>
           {docs?.map((doc) => {
-            const hostApp = hostAppMap.get(doc.user_id);
+            const profile = profileMap.get(doc.user_id);
             return (
               <TableRow key={doc.id}>
                 <TableCell className="text-sm">
                   {new Date(doc.created_at).toLocaleDateString("ru-RU")}
                 </TableCell>
                 <TableCell>
-                  {hostApp ? (
+                  {profile ? (
                     <div>
-                      <div className="font-medium">{hostApp.host_name}</div>
+                      <div className="font-medium">{profile.name || "—"}</div>
                       <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {hostApp.address}
+                        {profile.email || profile.phone || ""}
                       </div>
                     </div>
                   ) : (
