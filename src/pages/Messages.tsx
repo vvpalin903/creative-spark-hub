@@ -1,5 +1,5 @@
 import { useEffect, useMemo } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -19,7 +19,6 @@ interface Props {
 export default function Messages({ role }: Props) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const activeChatId = searchParams.get("chat");
   const { data: unread } = useUnreadMessages();
 
@@ -90,6 +89,24 @@ export default function Messages({ role }: Props) {
       const objMap = new Map((objs || []).map((o: any) => [o.id, o]));
       const hostMap = new Map((hostProfiles || []).map((p: any) => [p.user_id, p.name]));
 
+      // 5. Fetch last message per chat (one query, then group client-side)
+      const { data: lastMsgs } = await supabase
+        .from("messages")
+        .select("chat_id, message_text, message_type, created_at, sender_user_id")
+        .in("chat_id", chatIds)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const lastMsgMap = new Map<string, { text: string; type: string; created_at: string; mine: boolean }>();
+      for (const m of lastMsgs || []) {
+        if (lastMsgMap.has(m.chat_id)) continue;
+        lastMsgMap.set(m.chat_id, {
+          text: m.message_text,
+          type: m.message_type,
+          created_at: m.created_at,
+          mine: m.sender_user_id === user.id,
+        });
+      }
+
       return chatRows.map((c) => {
         const req = c.related_request_id ? reqMap.get(c.related_request_id) : null;
         const obj = c.related_object_id ? objMap.get(c.related_object_id) : null;
@@ -98,11 +115,15 @@ export default function Messages({ role }: Props) {
           ? req?.client_name || "Клиент"
           : (obj?.host_user_id && hostMap.get(obj.host_user_id)) || "Хост";
         const lotTitle = obj?.title || "Без названия";
+        const last = lastMsgMap.get(c.id);
         return {
           id: c.id,
           counterpart,
           lotTitle,
           lastMessageAt: c.last_message_at,
+          lastMessageText: last?.text || "",
+          lastMessageType: last?.type || "text",
+          lastMessageMine: last?.mine || false,
         };
       });
     },
@@ -118,6 +139,25 @@ export default function Messages({ role }: Props) {
 
   const selectChat = (chatId: string) => {
     setSearchParams({ chat: chatId });
+  };
+
+  const formatTime = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if (sameDay) return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+    if (diffDays === 1) return "вчера";
+    if (diffDays < 7) return d.toLocaleDateString("ru-RU", { weekday: "short" });
+    return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+  };
+
+  const formatPreview = (c: { lastMessageText: string; lastMessageType: string; lastMessageMine: boolean }) => {
+    if (!c.lastMessageText) return "";
+    if (c.lastMessageType === "system") return c.lastMessageText;
+    const prefix = c.lastMessageMine ? "Вы: " : "";
+    return prefix + c.lastMessageText;
   };
 
   const title = role === "host" ? "Кабинет хоста" : "Кабинет клиента";
@@ -145,6 +185,8 @@ export default function Messages({ role }: Props) {
                 {chats.map((c) => {
                   const isActive = c.id === activeChatId;
                   const unreadCount = unread?.byChat?.[c.id] || 0;
+                  const preview = formatPreview(c);
+                  const time = formatTime(c.lastMessageAt);
                   return (
                     <li key={c.id}>
                       <button
@@ -158,13 +200,26 @@ export default function Messages({ role }: Props) {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-medium text-sm truncate">{c.counterpart}</p>
-                            {unreadCount > 0 && (
-                              <span className="bg-destructive text-destructive-foreground rounded-full px-1.5 text-[10px] font-bold min-w-[18px] text-center shrink-0">
-                                {unreadCount}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {time && (
+                                <span className="text-[10px] text-muted-foreground">{time}</span>
+                              )}
+                              {unreadCount > 0 && (
+                                <span className="bg-destructive text-destructive-foreground rounded-full px-1.5 text-[10px] font-bold min-w-[18px] text-center">
+                                  {unreadCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{c.lotTitle}</p>
+                          {preview && (
+                            <p className={cn(
+                              "text-xs truncate mt-1",
+                              unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                            )}>
+                              {preview}
+                            </p>
+                          )}
                         </div>
                       </button>
                     </li>
