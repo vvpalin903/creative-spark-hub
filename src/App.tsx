@@ -22,13 +22,12 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
+    <BrowserRouter>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
           <Routes>
-            {/* AuthProvider wraps Routes so useAuth works in pages and Header */}
             <Route path="/" element={<Index />} />
             <Route path="/rent" element={<Rent />} />
             <Route path="/lot/:id" element={<LotDetail />} />
@@ -42,9 +41,9 @@ const App = () => (
             <Route path="/docs/:slug" element={<Document />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+        </TooltipProvider>
+      </AuthProvider>
+    </BrowserRouter>
   </QueryClientProvider>
 );
 
