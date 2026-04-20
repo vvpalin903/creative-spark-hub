@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from "@/components/ui/button";
 import { Inbox, History, ShieldCheck, Search } from "lucide-react";
 import { bookingRequestStatusColors, bookingRequestStatusLabels, placementStatusLabels } from "@/lib/labels";
+import { RequestChatRow } from "@/components/chat/RequestChatRow";
 
 const sections = [
   { to: "/dashboard/client", label: "Активные", icon: Inbox },
@@ -114,6 +115,7 @@ function ActiveTab() {
                   <TableHead>Дата</TableHead>
                   <TableHead>Объект</TableHead>
                   <TableHead>Статус</TableHead>
+                  <TableHead>Чат</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -128,6 +130,9 @@ function ActiveTab() {
                       <span className={`text-xs px-2 py-1 rounded ${bookingRequestStatusColors[r.request_status]}`}>
                         {bookingRequestStatusLabels[r.request_status]}
                       </span>
+                    </TableCell>
+                    <TableCell>
+                      <RequestChatRow requestId={r.id} />
                     </TableCell>
                   </TableRow>
                 ))}
