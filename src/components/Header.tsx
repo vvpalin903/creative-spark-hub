@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
+import { useUnreadMessages } from "@/hooks/useUnreadMessages";
 
 const navItems = [
   { label: "Снять место", href: "/rent" },
@@ -24,6 +25,8 @@ export function Header() {
   const location = useLocation();
   const navigate = useNavigate();
   const { session, user, isHost, isClient, isAdmin, signOut } = useAuth();
+  const { data: unread } = useUnreadMessages();
+  const unreadTotal = unread?.total || 0;
 
   const handleNavClick = (href: string) => {
     setMobileOpen(false);
@@ -62,9 +65,14 @@ export function Header() {
           {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="relative">
                   <User className="h-4 w-4 mr-2" />
                   {user?.email?.split("@")[0]}
+                  {unreadTotal > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold flex items-center justify-center px-1">
+                      {unreadTotal > 99 ? "99+" : unreadTotal}
+                    </span>
+                  )}
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="bg-popover">
