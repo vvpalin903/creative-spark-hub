@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
+import { ReviewButton } from "@/components/reviews/ReviewButton";
 import {
   accessModeLabels,
   bookingRequestStatusColors,
