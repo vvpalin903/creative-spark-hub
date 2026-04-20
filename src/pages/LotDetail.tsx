@@ -18,6 +18,7 @@ import {
   scheduleModeLabels,
   storageCategoryLabels,
 } from "@/lib/labels";
+import { HostRating } from "@/components/reviews/HostRating";
 
 export default function LotDetail() {
   const { id } = useParams<{ id: string }>();
