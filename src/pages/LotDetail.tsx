@@ -18,6 +18,7 @@ import {
   scheduleModeLabels,
   storageCategoryLabels,
 } from "@/lib/labels";
+import { HostRating } from "@/components/reviews/HostRating";
 
 export default function LotDetail() {
   const { id } = useParams<{ id: string }>();
@@ -145,6 +146,11 @@ export default function LotDetail() {
               <p className="text-muted-foreground flex items-center gap-1 mb-2">
                 <MapPin className="h-4 w-4" /> {object.city ? `${object.city}, ` : ""}{object.address}
               </p>
+              {object.host_user_id && (
+                <div className="mb-2">
+                  <HostRating hostUserId={object.host_user_id} />
+                </div>
+              )}
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Clock className="h-4 w-4" />
