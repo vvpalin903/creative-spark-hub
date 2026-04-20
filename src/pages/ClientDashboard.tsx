@@ -7,12 +7,13 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Inbox, History, ShieldCheck, Search } from "lucide-react";
+import { Inbox, History, ShieldCheck, Search, MessageCircle } from "lucide-react";
 import { bookingRequestStatusColors, bookingRequestStatusLabels, placementStatusLabels } from "@/lib/labels";
-import { RequestChatRow } from "@/components/chat/RequestChatRow";
+import { RequestChatLink } from "@/components/chat/RequestChatLink";
 
 const sections = [
   { to: "/dashboard/client", label: "Активные", icon: Inbox },
+  { to: "/dashboard/client/messages", label: "Сообщения", icon: MessageCircle },
   { to: "/dashboard/client/history", label: "История", icon: History },
   { to: "/dashboard/client/verification", label: "Верификация", icon: ShieldCheck },
 ];
@@ -132,7 +133,7 @@ function ActiveTab() {
                       </span>
                     </TableCell>
                     <TableCell>
-                      <RequestChatRow requestId={r.id} />
+                      <RequestChatLink requestId={r.id} role="client" />
                     </TableCell>
                   </TableRow>
                 ))}

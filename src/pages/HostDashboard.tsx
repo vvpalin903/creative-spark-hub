@@ -9,9 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send } from "lucide-react";
+import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
-import { RequestChatRow } from "@/components/chat/RequestChatRow";
+import { RequestChatLink } from "@/components/chat/RequestChatLink";
 import {
   accessModeLabels,
   bookingRequestStatusColors,
@@ -28,6 +28,7 @@ import type { Tables } from "@/integrations/supabase/types";
 const sections = [
   { to: "/dashboard/host", label: "Мои объекты", icon: Building2 },
   { to: "/dashboard/host/requests", label: "Заявки", icon: Inbox },
+  { to: "/dashboard/host/messages", label: "Сообщения", icon: MessageCircle },
   { to: "/dashboard/host/history", label: "История", icon: History },
   { to: "/dashboard/host/verification", label: "Верификация", icon: ShieldCheck },
 ];
@@ -227,7 +228,7 @@ function RequestsTab() {
                 </Select>
               </TableCell>
               <TableCell>
-                <RequestChatRow requestId={r.id} />
+                <RequestChatLink requestId={r.id} role="host" />
               </TableCell>
             </TableRow>
           ))}
