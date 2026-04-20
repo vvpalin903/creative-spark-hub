@@ -15,6 +15,7 @@ import DashboardPicker from "./pages/DashboardPicker";
 import HostDashboard from "./pages/HostDashboard";
 import HostObjectDetail from "./pages/HostObjectDetail";
 import ClientDashboard from "./pages/ClientDashboard";
+import Messages from "./pages/Messages";
 import Document from "./pages/Document";
 import NotFound from "./pages/NotFound";
 
