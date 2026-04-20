@@ -170,38 +170,94 @@ function HistoryTab() {
     enabled: !!user,
   });
 
+  const { data: completedPlacements } = useQuery({
+    queryKey: ["client", "completed_placements", user?.id],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("placements")
+        .select("*, host_objects(title, address, host_user_id)")
+        .eq("client_user_id", user!.id)
+        .eq("placement_status", "completed")
+        .order("ended_at", { ascending: false });
+      if (error) throw error;
+      // Fetch host names
+      const hostIds = Array.from(new Set((data || []).map((p: any) => p.host_user_id).filter(Boolean)));
+      let hostNames: Record<string, string> = {};
+      if (hostIds.length) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, name")
+          .in("user_id", hostIds);
+        hostNames = Object.fromEntries((profiles || []).map((p) => [p.user_id, p.name || "Хост"]));
+      }
+      return (data || []).map((p: any) => ({ ...p, host_name: hostNames[p.host_user_id] || "Хост" }));
+    },
+    enabled: !!user,
+  });
+
   return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Объект</TableHead>
-            <TableHead>Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests?.map((r: any) => (
-            <TableRow key={r.id}>
-              <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
-              <TableCell>
-                <div className="font-medium">{r.host_objects?.title || "—"}</div>
-                <div className="text-xs text-muted-foreground truncate max-w-[180px]">{r.host_objects?.address}</div>
-              </TableCell>
-              <TableCell>
-                <span className={`text-xs px-2 py-1 rounded ${bookingRequestStatusColors[r.request_status]}`}>
-                  {bookingRequestStatusLabels[r.request_status]}
-                </span>
-              </TableCell>
-            </TableRow>
-          ))}
-          {(!requests || requests.length === 0) && (
-            <TableRow>
-              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">История пуста</TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+    <div className="space-y-6">
+      {completedPlacements && completedPlacements.length > 0 && (
+        <section>
+          <h3 className="text-sm font-semibold mb-2">Завершённые размещения</h3>
+          <div className="grid gap-3">
+            {completedPlacements.map((p: any) => (
+              <Card key={p.id}>
+                <CardContent className="p-4 flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <div className="font-medium truncate">{p.host_objects?.title}</div>
+                    <div className="text-xs text-muted-foreground truncate">{p.host_objects?.address}</div>
+                  </div>
+                  {p.host_user_id && (
+                    <ReviewButton
+                      placementId={p.id}
+                      rateeUserId={p.host_user_id}
+                      raterRole="client"
+                      counterpartName={p.host_name}
+                    />
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <section>
+        <h3 className="text-sm font-semibold mb-2">Заявки</h3>
+        <div className="rounded-lg border overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Дата</TableHead>
+                <TableHead>Объект</TableHead>
+                <TableHead>Статус</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {requests?.map((r: any) => (
+                <TableRow key={r.id}>
+                  <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                  <TableCell>
+                    <div className="font-medium">{r.host_objects?.title || "—"}</div>
+                    <div className="text-xs text-muted-foreground truncate max-w-[180px]">{r.host_objects?.address}</div>
+                  </TableCell>
+                  <TableCell>
+                    <span className={`text-xs px-2 py-1 rounded ${bookingRequestStatusColors[r.request_status]}`}>
+                      {bookingRequestStatusLabels[r.request_status]}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {(!requests || requests.length === 0) && (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">История пуста</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </section>
     </div>
   );
 }
