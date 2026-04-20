@@ -36,8 +36,10 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPicker /></ProtectedRoute>} />
             <Route path="/dashboard/host/objects/:id" element={<ProtectedRoute requireRole="host"><HostObjectDetail /></ProtectedRoute>} />
+            <Route path="/dashboard/host/messages" element={<ProtectedRoute requireRole="host"><Messages role="host" /></ProtectedRoute>} />
             <Route path="/dashboard/host/*" element={<ProtectedRoute requireRole="host"><HostDashboard /></ProtectedRoute>} />
-            <Route path="/dashboard/client/*" element={<ProtectedRoute requireRole="client"><ClientDashboard /></ProtectedRoute>} />
+            <Route path="/dashboard/client/messages" element={<ProtectedRoute requireRole="client"><Messages role="client" /></ProtectedRoute>} />
+            <Route path="/dashboard/client/*" element={<ProtectedRoute requireRole="client"><ClientDashboard /></ProtectedRoute>}/>
             <Route path="/admin" element={<Admin />} />
             <Route path="/docs/:slug" element={<Document />} />
             <Route path="*" element={<NotFound />} />
