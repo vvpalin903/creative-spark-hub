@@ -10,7 +10,7 @@ export function HeroSection() {
           Храните вещи рядом с домом
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-balance animate-fade-in" style={{ animationDelay: "0.1s" }}>
-          Сервис аренды мест для хранения шин, велосипедов и других вещей в Мытищах и окрестностях
+          Сервис аренды мест для хранения шин, велосипедов и других вещей рядом с вами
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: "0.2s" }}>
           <Button asChild size="lg" className="text-base">
