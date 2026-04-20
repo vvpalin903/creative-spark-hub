@@ -28,6 +28,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <Routes>
+            {/* AuthProvider wraps Routes so useAuth works in pages and Header */}
             <Route path="/" element={<Index />} />
             <Route path="/rent" element={<Rent />} />
             <Route path="/lot/:id" element={<LotDetail />} />
