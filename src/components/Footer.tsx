@@ -12,7 +12,7 @@ export function Footer() {
               <span className="font-bold text-foreground">Место рядом</span>
             </Link>
             <p className="text-sm text-muted-foreground">
-              Сервис хранения вещей рядом с домом. Мытищи и окрестности.
+              Сервис хранения вещей рядом с домом — в вашем районе.
             </p>
           </div>
 
