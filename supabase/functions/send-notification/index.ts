@@ -85,6 +85,16 @@ function buildHtml(type: string, data: Record<string, any> = {}): string {
         ${data.hide_url ? `<br/><p>Если вы хотите снять это объявление с публикации, нажмите кнопку ниже:</p><a href="${data.hide_url}" style="display:inline-block;padding:12px 24px;background:#e76f51;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Скрыть объявление</a>` : ''}
       `
       break
+    case 'chat_unread_message':
+      content = `
+        <h3>Здравствуйте, ${data.recipient_name || ''}!</h3>
+        <p>У вас новое непрочитанное сообщение в чате${data.lot_title ? ` по лоту <strong>${data.lot_title}</strong>` : ''}.</p>
+        ${data.sender_name ? `<p><strong>От:</strong> ${data.sender_name}</p>` : ''}
+        ${data.message_preview ? `<div style="background:#f5f5f5;border-left:3px solid #2a9d8f;padding:12px 16px;margin:16px 0;font-style:italic;color:#333;">${data.message_preview}</div>` : ''}
+        ${data.chat_url ? `<p style="margin-top:24px;"><a href="${data.chat_url}" style="display:inline-block;padding:12px 24px;background:#2a9d8f;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Открыть чат</a></p>` : ''}
+        <p style="font-size:12px;color:#999;margin-top:16px;">Чтобы не получать такие письма, ответьте в чате — мы перестанем уведомлять, как только вы прочитаете сообщение.</p>
+      `
+      break
   }
 
   return base.replace('{{CONTENT}}', content)
