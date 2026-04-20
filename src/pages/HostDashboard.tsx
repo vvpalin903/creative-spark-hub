@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
+import { RequestChatRow } from "@/components/chat/RequestChatRow";
 import {
   accessModeLabels,
   bookingRequestStatusColors,
@@ -195,6 +196,7 @@ function RequestsTab() {
             <TableHead>Клиент</TableHead>
             <TableHead>Период</TableHead>
             <TableHead>Статус</TableHead>
+            <TableHead>Чат</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -224,11 +226,14 @@ function RequestsTab() {
                   </SelectContent>
                 </Select>
               </TableCell>
+              <TableCell>
+                <RequestChatRow requestId={r.id} />
+              </TableCell>
             </TableRow>
           ))}
           {(!requests || requests.length === 0) && (
             <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">Заявок пока нет</TableCell>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Заявок пока нет</TableCell>
             </TableRow>
           )}
         </TableBody>
