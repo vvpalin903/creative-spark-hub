@@ -41,6 +41,19 @@ export default function LotDetail() {
     enabled: !!id,
   });
 
+  const { data: hostProfile } = useQuery({
+    queryKey: ["lot-host-profile", object?.host_user_id],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("name")
+        .eq("user_id", object!.host_user_id!)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!object?.host_user_id,
+  });
+
   const { data: profile } = useQuery({
     queryKey: ["profile", user?.id],
     queryFn: async () => {
@@ -147,7 +160,15 @@ export default function LotDetail() {
                 <MapPin className="h-4 w-4" /> {object.city ? `${object.city}, ` : ""}{object.address}
               </p>
               {object.host_user_id && (
-                <div className="mb-2">
+                <div className="mb-2 flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {hostProfile?.name && (
+                    <Link
+                      to={`/host/${object.host_user_id}`}
+                      className="text-sm text-muted-foreground hover:text-primary hover:underline"
+                    >
+                      Хост: <span className="font-medium text-foreground">{hostProfile.name}</span>
+                    </Link>
+                  )}
                   <HostRating hostUserId={object.host_user_id} />
                 </div>
               )}

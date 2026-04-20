@@ -624,6 +624,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_host_public_stats: {
+        Args: { _host_user_id: string }
+        Returns: {
+          completed_placements: number
+          published_objects: number
+        }[]
+      }
       get_host_rating: {
         Args: { _host_user_id: string }
         Returns: {
