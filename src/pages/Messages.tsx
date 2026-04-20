@@ -186,6 +186,8 @@ export default function Messages({ role }: Props) {
                 {chats.map((c) => {
                   const isActive = c.id === activeChatId;
                   const unreadCount = unread?.byChat?.[c.id] || 0;
+                  const preview = formatPreview(c);
+                  const time = formatTime(c.lastMessageAt);
                   return (
                     <li key={c.id}>
                       <button
@@ -199,13 +201,26 @@ export default function Messages({ role }: Props) {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center justify-between gap-2">
                             <p className="font-medium text-sm truncate">{c.counterpart}</p>
-                            {unreadCount > 0 && (
-                              <span className="bg-destructive text-destructive-foreground rounded-full px-1.5 text-[10px] font-bold min-w-[18px] text-center shrink-0">
-                                {unreadCount}
-                              </span>
-                            )}
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              {time && (
+                                <span className="text-[10px] text-muted-foreground">{time}</span>
+                              )}
+                              {unreadCount > 0 && (
+                                <span className="bg-destructive text-destructive-foreground rounded-full px-1.5 text-[10px] font-bold min-w-[18px] text-center">
+                                  {unreadCount}
+                                </span>
+                              )}
+                            </div>
                           </div>
                           <p className="text-xs text-muted-foreground truncate mt-0.5">{c.lotTitle}</p>
+                          {preview && (
+                            <p className={cn(
+                              "text-xs truncate mt-1",
+                              unreadCount > 0 ? "text-foreground font-medium" : "text-muted-foreground"
+                            )}>
+                              {preview}
+                            </p>
+                          )}
                         </div>
                       </button>
                     </li>
