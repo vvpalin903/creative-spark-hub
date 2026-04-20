@@ -251,7 +251,7 @@ function HistoryTab() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("placements")
-        .select("*, host_objects(title, address)")
+        .select("*, host_objects(title, address), booking_requests(client_name, client_user_id)")
         .eq("host_user_id", user!.id)
         .order("created_at", { ascending: false });
       if (error) throw error;
@@ -268,30 +268,47 @@ function HistoryTab() {
         <TableHeader>
           <TableRow>
             <TableHead>Объект</TableHead>
+            <TableHead>Клиент</TableHead>
             <TableHead>Период</TableHead>
             <TableHead>Статус</TableHead>
+            <TableHead className="text-right">Отзыв</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {placements?.map((p: any) => (
-            <TableRow key={p.id}>
-              <TableCell>
-                <div className="font-medium">{p.host_objects?.title || "—"}</div>
-                <div className="text-xs text-muted-foreground">{p.host_objects?.address}</div>
-              </TableCell>
-              <TableCell className="text-sm">
-                {p.started_at ? new Date(p.started_at).toLocaleDateString("ru-RU") : "—"}
-                {" → "}
-                {p.ended_at ? new Date(p.ended_at).toLocaleDateString("ru-RU") : "сейчас"}
-              </TableCell>
-              <TableCell>
-                <Badge variant="outline">{placementStatusLabels[p.placement_status]}</Badge>
-              </TableCell>
-            </TableRow>
-          ))}
+          {placements?.map((p: any) => {
+            const clientName = p.booking_requests?.client_name || "Клиент";
+            const clientUserId = p.client_user_id || p.booking_requests?.client_user_id;
+            return (
+              <TableRow key={p.id}>
+                <TableCell>
+                  <div className="font-medium">{p.host_objects?.title || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{p.host_objects?.address}</div>
+                </TableCell>
+                <TableCell className="text-sm">{clientName}</TableCell>
+                <TableCell className="text-sm">
+                  {p.started_at ? new Date(p.started_at).toLocaleDateString("ru-RU") : "—"}
+                  {" → "}
+                  {p.ended_at ? new Date(p.ended_at).toLocaleDateString("ru-RU") : "сейчас"}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline">{placementStatusLabels[p.placement_status]}</Badge>
+                </TableCell>
+                <TableCell className="text-right">
+                  {p.placement_status === "completed" && clientUserId && (
+                    <ReviewButton
+                      placementId={p.id}
+                      rateeUserId={clientUserId}
+                      raterRole="host"
+                      counterpartName={clientName}
+                    />
+                  )}
+                </TableCell>
+              </TableRow>
+            );
+          })}
           {(!placements || placements.length === 0) && (
             <TableRow>
-              <TableCell colSpan={3} className="text-center text-muted-foreground py-8">История пуста</TableCell>
+              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">История пуста</TableCell>
             </TableRow>
           )}
         </TableBody>
