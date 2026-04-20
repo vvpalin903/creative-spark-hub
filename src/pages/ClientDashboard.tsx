@@ -119,6 +119,7 @@ function ActiveTab() {
                   <TableHead>Объект</TableHead>
                   <TableHead>Статус</TableHead>
                   <TableHead>Чат</TableHead>
+                  <TableHead className="text-right">Действия</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -136,6 +137,9 @@ function ActiveTab() {
                     </TableCell>
                     <TableCell>
                       <RequestChatLink requestId={r.id} role="client" />
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <CancelRequestButton requestId={r.id} startDate={r.start_date} />
                     </TableCell>
                   </TableRow>
                 ))}
