@@ -25,6 +25,7 @@ const subjects: Record<string, string> = {
   client_application_received: 'Ваша заявка на аренду принята — Место рядом',
   lot_verified: 'Ваш лот подтверждён и скоро будет опубликован — Место рядом',
   client_app_to_host: 'Новая заявка на ваш лот — Место рядом',
+  chat_unread_message: 'Новое сообщение в чате — Место рядом',
 }
 
 function buildHtml(type: string, data: Record<string, any> = {}): string {
