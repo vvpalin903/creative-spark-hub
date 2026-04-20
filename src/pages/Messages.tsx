@@ -90,6 +90,24 @@ export default function Messages({ role }: Props) {
       const objMap = new Map((objs || []).map((o: any) => [o.id, o]));
       const hostMap = new Map((hostProfiles || []).map((p: any) => [p.user_id, p.name]));
 
+      // 5. Fetch last message per chat (one query, then group client-side)
+      const { data: lastMsgs } = await supabase
+        .from("messages")
+        .select("chat_id, message_text, message_type, created_at, sender_user_id")
+        .in("chat_id", chatIds)
+        .order("created_at", { ascending: false })
+        .limit(500);
+      const lastMsgMap = new Map<string, { text: string; type: string; created_at: string; mine: boolean }>();
+      for (const m of lastMsgs || []) {
+        if (lastMsgMap.has(m.chat_id)) continue;
+        lastMsgMap.set(m.chat_id, {
+          text: m.message_text,
+          type: m.message_type,
+          created_at: m.created_at,
+          mine: m.sender_user_id === user.id,
+        });
+      }
+
       return chatRows.map((c) => {
         const req = c.related_request_id ? reqMap.get(c.related_request_id) : null;
         const obj = c.related_object_id ? objMap.get(c.related_object_id) : null;
@@ -98,11 +116,15 @@ export default function Messages({ role }: Props) {
           ? req?.client_name || "Клиент"
           : (obj?.host_user_id && hostMap.get(obj.host_user_id)) || "Хост";
         const lotTitle = obj?.title || "Без названия";
+        const last = lastMsgMap.get(c.id);
         return {
           id: c.id,
           counterpart,
           lotTitle,
           lastMessageAt: c.last_message_at,
+          lastMessageText: last?.text || "",
+          lastMessageType: last?.type || "text",
+          lastMessageMine: last?.mine || false,
         };
       });
     },
