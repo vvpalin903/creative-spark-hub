@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import DashboardPicker from "./pages/DashboardPicker";
 import HostDashboard from "./pages/HostDashboard";
 import HostObjectDetail from "./pages/HostObjectDetail";
+import HostProfile from "./pages/HostProfile";
 import ClientDashboard from "./pages/ClientDashboard";
 import Messages from "./pages/Messages";
 import Document from "./pages/Document";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/rent" element={<Rent />} />
             <Route path="/lot/:id" element={<LotDetail />} />
             <Route path="/host" element={<Host />} />
+            <Route path="/host/:id" element={<HostProfile />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPicker /></ProtectedRoute>} />
             <Route path="/dashboard/host/objects/:id" element={<ProtectedRoute requireRole="host"><HostObjectDetail /></ProtectedRoute>} />
