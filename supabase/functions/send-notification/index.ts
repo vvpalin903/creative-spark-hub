@@ -13,6 +13,7 @@ const BodySchema = z.object({
     'client_application_received',
     'lot_verified',
     'client_app_to_host',
+    'chat_unread_message',
   ]),
   to: z.string().email(),
   data: z.record(z.any()).optional(),
