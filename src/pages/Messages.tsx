@@ -19,7 +19,6 @@ interface Props {
 export default function Messages({ role }: Props) {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
   const activeChatId = searchParams.get("chat");
   const { data: unread } = useUnreadMessages();
 
