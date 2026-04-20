@@ -13,6 +13,7 @@ import Admin from "./pages/Admin";
 import Auth from "./pages/Auth";
 import DashboardPicker from "./pages/DashboardPicker";
 import HostDashboard from "./pages/HostDashboard";
+import HostObjectDetail from "./pages/HostObjectDetail";
 import ClientDashboard from "./pages/ClientDashboard";
 import Document from "./pages/Document";
 import NotFound from "./pages/NotFound";
@@ -33,6 +34,7 @@ const App = () => (
             <Route path="/host" element={<Host />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPicker /></ProtectedRoute>} />
+            <Route path="/dashboard/host/objects/:id" element={<ProtectedRoute requireRole="host"><HostObjectDetail /></ProtectedRoute>} />
             <Route path="/dashboard/host/*" element={<ProtectedRoute requireRole="host"><HostDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/client/*" element={<ProtectedRoute requireRole="client"><ClientDashboard /></ProtectedRoute>} />
             <Route path="/admin" element={<Admin />} />

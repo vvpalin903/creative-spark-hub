@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -10,7 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { accessModeLabels, scheduleModeLabels, storageCategoryLabels } from "@/lib/labels";
+import { accessModeLabels, scheduleModeLabels } from "@/lib/labels";
 import type { Tables, Enums } from "@/integrations/supabase/types";
 
 interface Props {
@@ -48,6 +49,7 @@ async function geocode(address: string) {
 
 export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const isEdit = !!object;
 
@@ -60,9 +62,6 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     access_mode: (object?.access_mode || "pre_approval") as Enums<"access_mode_ext">,
     schedule_mode: (object?.schedule_mode || "by_arrangement") as Enums<"schedule_mode">,
     schedule_notes: object?.schedule_notes || "",
-    // slot fields (single slot per object on creation)
-    slot_category: "other" as Enums<"storage_category">,
-    slot_price: "",
   });
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
@@ -93,7 +92,7 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
       if (isEdit) {
         const { error } = await supabase.from("host_objects").update(payload).eq("id", object!.id);
         if (error) throw error;
-        return object!.id;
+        return { id: object!.id, created: false };
       } else {
         const { data, error } = await supabase
           .from("host_objects")
@@ -101,23 +100,15 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           .select("id")
           .single();
         if (error) throw error;
-
-        // create initial slot if price provided
-        if (form.slot_price) {
-          await supabase.from("storage_slots").insert({
-            object_id: data.id,
-            category: form.slot_category,
-            price_monthly: parseInt(form.slot_price) || 0,
-            slot_count: 1,
-          });
-        }
-        return data.id;
+        return { id: data.id, created: true };
       }
     },
-    onSuccess: () => {
+    onSuccess: ({ id, created }) => {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
+      queryClient.invalidateQueries({ queryKey: ["host", "object", id] });
       toast({ title: isEdit ? "Объект обновлён" : "Объект создан" });
       onOpenChange(false);
+      if (created) navigate(`/dashboard/host/objects/${id}`);
     },
     onError: (e: any) => {
       toast({ title: "Ошибка", description: e.message, variant: "destructive" });
@@ -201,27 +192,9 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           </div>
 
           {!isEdit && (
-            <div className="rounded-lg border p-3 space-y-3 bg-accent/30">
-              <p className="text-sm font-medium">Первый слот хранения</p>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Категория</Label>
-                  <Select value={form.slot_category} onValueChange={(v) => set("slot_category", v)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {Object.entries(storageCategoryLabels).map(([k, v]) => (
-                        <SelectItem key={k} value={k}>{v}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Цена (₽/мес)</Label>
-                  <Input type="number" value={form.slot_price} onChange={(e) => set("slot_price", e.target.value)} placeholder="например, 1500" />
-                </div>
-              </div>
-              <p className="text-xs text-muted-foreground">Можете добавить ещё слоты позже на странице объекта.</p>
-            </div>
+            <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
+              После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
+            </p>
           )}
 
           <Button type="submit" className="w-full" disabled={mutation.isPending}>

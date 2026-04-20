@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route, Navigate, Link } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -109,12 +109,12 @@ function ObjectsTab() {
             const slots = obj.storage_slots || [];
             const minPrice = slots.length ? Math.min(...slots.map((s: any) => s.price_monthly)) : null;
             return (
-              <Card key={obj.id}>
+              <Card key={obj.id} className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
-                    <div className="min-w-0 flex-1">
+                    <Link to={`/dashboard/host/objects/${obj.id}`} className="min-w-0 flex-1 group">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <h3 className="font-semibold text-foreground truncate">{obj.title}</h3>
+                        <h3 className="font-semibold text-foreground truncate group-hover:text-primary transition-colors">{obj.title}</h3>
                         <span className={`text-xs px-2 py-0.5 rounded ${objectStatusColors[obj.object_status]}`}>
                           {objectStatusLabels[obj.object_status]}
                         </span>
@@ -127,7 +127,7 @@ function ObjectsTab() {
                         {minPrice !== null && minPrice > 0 && <span>от {minPrice.toLocaleString("ru-RU")} ₽/мес</span>}
                         <span>Верификация: {objectVerificationStatusLabels[obj.verification_status]}</span>
                       </div>
-                    </div>
+                    </Link>
                     <div className="flex gap-2 shrink-0">
                       {obj.object_status === "draft" && (
                         <Button size="sm" variant="default" onClick={() => submitForReview.mutate(obj.id)} disabled={submitForReview.isPending}>
