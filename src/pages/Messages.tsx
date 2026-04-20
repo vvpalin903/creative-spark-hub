@@ -142,6 +142,25 @@ export default function Messages({ role }: Props) {
     setSearchParams({ chat: chatId });
   };
 
+  const formatTime = (iso: string | null) => {
+    if (!iso) return "";
+    const d = new Date(iso);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    if (sameDay) return d.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+    const diffDays = Math.floor((now.getTime() - d.getTime()) / 86_400_000);
+    if (diffDays === 1) return "вчера";
+    if (diffDays < 7) return d.toLocaleDateString("ru-RU", { weekday: "short" });
+    return d.toLocaleDateString("ru-RU", { day: "2-digit", month: "2-digit" });
+  };
+
+  const formatPreview = (c: { lastMessageText: string; lastMessageType: string; lastMessageMine: boolean }) => {
+    if (!c.lastMessageText) return "";
+    if (c.lastMessageType === "system") return c.lastMessageText;
+    const prefix = c.lastMessageMine ? "Вы: " : "";
+    return prefix + c.lastMessageText;
+  };
+
   const title = role === "host" ? "Кабинет хоста" : "Кабинет клиента";
 
   return (
