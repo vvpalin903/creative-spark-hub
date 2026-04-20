@@ -13,6 +13,7 @@ const BodySchema = z.object({
     'client_application_received',
     'lot_verified',
     'client_app_to_host',
+    'chat_unread_message',
   ]),
   to: z.string().email(),
   data: z.record(z.any()).optional(),
@@ -24,6 +25,7 @@ const subjects: Record<string, string> = {
   client_application_received: 'Ваша заявка на аренду принята — Место рядом',
   lot_verified: 'Ваш лот подтверждён и скоро будет опубликован — Место рядом',
   client_app_to_host: 'Новая заявка на ваш лот — Место рядом',
+  chat_unread_message: 'Новое сообщение в чате — Место рядом',
 }
 
 function buildHtml(type: string, data: Record<string, any> = {}): string {
@@ -81,6 +83,16 @@ function buildHtml(type: string, data: Record<string, any> = {}): string {
         ${data.comment ? `<p>Комментарий: ${data.comment}</p>` : ''}
         ${data.desired_date ? `<p>Желаемая дата начала: ${data.desired_date}</p>` : ''}
         ${data.hide_url ? `<br/><p>Если вы хотите снять это объявление с публикации, нажмите кнопку ниже:</p><a href="${data.hide_url}" style="display:inline-block;padding:12px 24px;background:#e76f51;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Скрыть объявление</a>` : ''}
+      `
+      break
+    case 'chat_unread_message':
+      content = `
+        <h3>Здравствуйте, ${data.recipient_name || ''}!</h3>
+        <p>У вас новое непрочитанное сообщение в чате${data.lot_title ? ` по лоту <strong>${data.lot_title}</strong>` : ''}.</p>
+        ${data.sender_name ? `<p><strong>От:</strong> ${data.sender_name}</p>` : ''}
+        ${data.message_preview ? `<div style="background:#f5f5f5;border-left:3px solid #2a9d8f;padding:12px 16px;margin:16px 0;font-style:italic;color:#333;">${data.message_preview}</div>` : ''}
+        ${data.chat_url ? `<p style="margin-top:24px;"><a href="${data.chat_url}" style="display:inline-block;padding:12px 24px;background:#2a9d8f;color:white;text-decoration:none;border-radius:6px;font-weight:bold;">Открыть чат</a></p>` : ''}
+        <p style="font-size:12px;color:#999;margin-top:16px;">Чтобы не получать такие письма, ответьте в чате — мы перестанем уведомлять, как только вы прочитаете сообщение.</p>
       `
       break
   }

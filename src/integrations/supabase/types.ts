@@ -80,6 +80,27 @@ export type Database = {
           },
         ]
       }
+      chat_email_notifications: {
+        Row: {
+          chat_id: string
+          id: string
+          last_notified_at: string
+          recipient_user_id: string
+        }
+        Insert: {
+          chat_id: string
+          id?: string
+          last_notified_at?: string
+          recipient_user_id: string
+        }
+        Update: {
+          chat_id?: string
+          id?: string
+          last_notified_at?: string
+          recipient_user_id?: string
+        }
+        Relationships: []
+      }
       chat_participants: {
         Row: {
           chat_id: string
