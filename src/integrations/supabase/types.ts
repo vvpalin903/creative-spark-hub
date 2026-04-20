@@ -409,6 +409,50 @@ export type Database = {
         }
         Relationships: []
       }
+      reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          placement_id: string
+          ratee_user_id: string
+          rater_role: Database["public"]["Enums"]["chat_role"]
+          rater_user_id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          placement_id: string
+          ratee_user_id: string
+          rater_role: Database["public"]["Enums"]["chat_role"]
+          rater_user_id: string
+          rating: number
+          updated_at?: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          placement_id?: string
+          ratee_user_id?: string
+          rater_role?: Database["public"]["Enums"]["chat_role"]
+          rater_user_id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_placement_id_fkey"
+            columns: ["placement_id"]
+            isOneToOne: false
+            referencedRelation: "placements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       site_documents: {
         Row: {
           content: string
@@ -580,6 +624,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_host_rating: {
+        Args: { _host_user_id: string }
+        Returns: {
+          avg_rating: number
+          review_count: number
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
