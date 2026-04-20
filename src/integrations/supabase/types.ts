@@ -14,6 +14,149 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_requests: {
+        Row: {
+          client_email: string | null
+          client_name: string
+          client_phone: string
+          client_user_id: string | null
+          comment: string | null
+          created_at: string
+          end_date: string | null
+          host_user_id: string | null
+          id: string
+          object_id: string | null
+          request_status: Database["public"]["Enums"]["booking_request_status"]
+          slot_id: string | null
+          start_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_email?: string | null
+          client_name: string
+          client_phone: string
+          client_user_id?: string | null
+          comment?: string | null
+          created_at?: string
+          end_date?: string | null
+          host_user_id?: string | null
+          id?: string
+          object_id?: string | null
+          request_status?: Database["public"]["Enums"]["booking_request_status"]
+          slot_id?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_email?: string | null
+          client_name?: string
+          client_phone?: string
+          client_user_id?: string | null
+          comment?: string | null
+          created_at?: string
+          end_date?: string | null
+          host_user_id?: string | null
+          id?: string
+          object_id?: string | null
+          request_status?: Database["public"]["Enums"]["booking_request_status"]
+          slot_id?: string | null
+          start_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_requests_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "host_objects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_requests_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "storage_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_participants: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          last_read_at: string | null
+          role_in_chat: Database["public"]["Enums"]["chat_role"]
+          user_id: string
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          role_in_chat: Database["public"]["Enums"]["chat_role"]
+          user_id: string
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          last_read_at?: string | null
+          role_in_chat?: Database["public"]["Enums"]["chat_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participants_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chats: {
+        Row: {
+          chat_type: Database["public"]["Enums"]["chat_type"]
+          created_at: string
+          id: string
+          last_message_at: string | null
+          related_object_id: string | null
+          related_request_id: string | null
+        }
+        Insert: {
+          chat_type: Database["public"]["Enums"]["chat_type"]
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          related_object_id?: string | null
+          related_request_id?: string | null
+        }
+        Update: {
+          chat_type?: Database["public"]["Enums"]["chat_type"]
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          related_object_id?: string | null
+          related_request_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chats_related_object_id_fkey"
+            columns: ["related_object_id"]
+            isOneToOne: false
+            referencedRelation: "host_objects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chats_related_request_id_fkey"
+            columns: ["related_request_id"]
+            isOneToOne: false
+            referencedRelation: "booking_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_applications: {
         Row: {
           category: Database["public"]["Enums"]["lot_category"] | null
@@ -121,6 +264,87 @@ export type Database = {
         }
         Relationships: []
       }
+      host_objects: {
+        Row: {
+          access_mode: Database["public"]["Enums"]["access_mode_ext"]
+          address: string
+          area_sqm: number | null
+          city: string | null
+          contact_email: string | null
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          description: string | null
+          district: string | null
+          hide_token: string | null
+          host_user_id: string | null
+          id: string
+          lat: number | null
+          lng: number | null
+          object_status: Database["public"]["Enums"]["object_status"]
+          photos: string[] | null
+          reviewer_notes: string | null
+          rules: string | null
+          schedule_mode: Database["public"]["Enums"]["schedule_mode"]
+          schedule_notes: string | null
+          title: string
+          updated_at: string
+          verification_status: Database["public"]["Enums"]["object_verification_status"]
+        }
+        Insert: {
+          access_mode?: Database["public"]["Enums"]["access_mode_ext"]
+          address: string
+          area_sqm?: number | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          district?: string | null
+          hide_token?: string | null
+          host_user_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          object_status?: Database["public"]["Enums"]["object_status"]
+          photos?: string[] | null
+          reviewer_notes?: string | null
+          rules?: string | null
+          schedule_mode?: Database["public"]["Enums"]["schedule_mode"]
+          schedule_notes?: string | null
+          title: string
+          updated_at?: string
+          verification_status?: Database["public"]["Enums"]["object_verification_status"]
+        }
+        Update: {
+          access_mode?: Database["public"]["Enums"]["access_mode_ext"]
+          address?: string
+          area_sqm?: number | null
+          city?: string | null
+          contact_email?: string | null
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          description?: string | null
+          district?: string | null
+          hide_token?: string | null
+          host_user_id?: string | null
+          id?: string
+          lat?: number | null
+          lng?: number | null
+          object_status?: Database["public"]["Enums"]["object_status"]
+          photos?: string[] | null
+          reviewer_notes?: string | null
+          rules?: string | null
+          schedule_mode?: Database["public"]["Enums"]["schedule_mode"]
+          schedule_notes?: string | null
+          title?: string
+          updated_at?: string
+          verification_status?: Database["public"]["Enums"]["object_verification_status"]
+        }
+        Relationships: []
+      }
       lots: {
         Row: {
           access_mode: Database["public"]["Enums"]["access_mode"]
@@ -190,6 +414,156 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          chat_id: string
+          created_at: string
+          id: string
+          is_read: boolean
+          message_text: string
+          message_type: Database["public"]["Enums"]["message_type"]
+          sender_user_id: string | null
+        }
+        Insert: {
+          chat_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text: string
+          message_type?: Database["public"]["Enums"]["message_type"]
+          sender_user_id?: string | null
+        }
+        Update: {
+          chat_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          message_text?: string
+          message_type?: Database["public"]["Enums"]["message_type"]
+          sender_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_chat_id_fkey"
+            columns: ["chat_id"]
+            isOneToOne: false
+            referencedRelation: "chats"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      placements: {
+        Row: {
+          booking_request_id: string
+          client_user_id: string | null
+          created_at: string
+          ended_at: string | null
+          host_user_id: string | null
+          id: string
+          object_id: string | null
+          placement_status: Database["public"]["Enums"]["placement_status"]
+          slot_id: string | null
+          started_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          booking_request_id: string
+          client_user_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          host_user_id?: string | null
+          id?: string
+          object_id?: string | null
+          placement_status?: Database["public"]["Enums"]["placement_status"]
+          slot_id?: string | null
+          started_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          booking_request_id?: string
+          client_user_id?: string | null
+          created_at?: string
+          ended_at?: string | null
+          host_user_id?: string | null
+          id?: string
+          object_id?: string | null
+          placement_status?: Database["public"]["Enums"]["placement_status"]
+          slot_id?: string | null
+          started_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "placements_booking_request_id_fkey"
+            columns: ["booking_request_id"]
+            isOneToOne: false
+            referencedRelation: "booking_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placements_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "host_objects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "placements_slot_id_fkey"
+            columns: ["slot_id"]
+            isOneToOne: false
+            referencedRelation: "storage_slots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          city: string | null
+          created_at: string
+          district: string | null
+          email: string | null
+          email_verified: boolean
+          id: string
+          name: string | null
+          phone: string | null
+          phone_verified: boolean
+          updated_at: string
+          user_id: string
+          verification_status: Database["public"]["Enums"]["user_verification_status"]
+        }
+        Insert: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          email?: string | null
+          email_verified?: boolean
+          id?: string
+          name?: string | null
+          phone?: string | null
+          phone_verified?: boolean
+          updated_at?: string
+          user_id: string
+          verification_status?: Database["public"]["Enums"]["user_verification_status"]
+        }
+        Update: {
+          avatar_url?: string | null
+          city?: string | null
+          created_at?: string
+          district?: string | null
+          email?: string | null
+          email_verified?: boolean
+          id?: string
+          name?: string | null
+          phone?: string | null
+          phone_verified?: boolean
+          updated_at?: string
+          user_id?: string
+          verification_status?: Database["public"]["Enums"]["user_verification_status"]
+        }
+        Relationships: []
+      }
       site_documents: {
         Row: {
           content: string
@@ -222,6 +596,50 @@ export type Database = {
           version?: number
         }
         Relationships: []
+      }
+      storage_slots: {
+        Row: {
+          category: Database["public"]["Enums"]["storage_category"]
+          created_at: string
+          description: string | null
+          id: string
+          object_id: string
+          price_monthly: number
+          slot_count: number
+          slot_status: Database["public"]["Enums"]["slot_status"]
+          updated_at: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["storage_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          object_id: string
+          price_monthly?: number
+          slot_count?: number
+          slot_status?: Database["public"]["Enums"]["slot_status"]
+          updated_at?: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["storage_category"]
+          created_at?: string
+          description?: string | null
+          id?: string
+          object_id?: string
+          price_monthly?: number
+          slot_count?: number
+          slot_status?: Database["public"]["Enums"]["slot_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "storage_slots_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "host_objects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
@@ -274,6 +692,44 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_logs: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          object_id: string | null
+          user_id: string | null
+          verification_status: Database["public"]["Enums"]["verification_log_status"]
+          verification_type: Database["public"]["Enums"]["verification_log_type"]
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          object_id?: string | null
+          user_id?: string | null
+          verification_status: Database["public"]["Enums"]["verification_log_status"]
+          verification_type: Database["public"]["Enums"]["verification_log_type"]
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          object_id?: string | null
+          user_id?: string | null
+          verification_status?: Database["public"]["Enums"]["verification_log_status"]
+          verification_type?: Database["public"]["Enums"]["verification_log_type"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verification_logs_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "host_objects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -286,14 +742,91 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_chat_participant: {
+        Args: { _chat_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       access_mode: "24/7" | "scheduled"
-      app_role: "admin" | "user"
+      access_mode_ext:
+        | "free_by_arrangement"
+        | "pre_approval"
+        | "host_present_only"
+        | "self_access"
+        | "rare_seasonal"
+        | "weekends_only"
+        | "weekdays_only"
+        | "specific_hours"
+      app_role: "admin" | "user" | "host" | "client"
+      booking_request_status:
+        | "new"
+        | "viewed"
+        | "accepted"
+        | "rejected"
+        | "cancelled"
+        | "completed"
+        | "expired"
+      chat_role: "host" | "client" | "admin"
+      chat_type: "host_client" | "admin_host" | "admin_client" | "support"
       client_app_status: "new" | "sent_to_host" | "completed" | "rejected"
       host_app_status: "new" | "verified" | "rejected"
       lot_category: "tires" | "bikes" | "other"
       lot_status: "draft" | "published" | "archived"
+      message_type: "text" | "system" | "file"
+      object_status:
+        | "draft"
+        | "pending_review"
+        | "needs_changes"
+        | "verified"
+        | "published"
+        | "hidden"
+        | "archived"
+      object_verification_status:
+        | "not_submitted"
+        | "pending"
+        | "approved"
+        | "rejected"
+        | "needs_changes"
+      placement_status:
+        | "upcoming"
+        | "active"
+        | "completed"
+        | "cancelled"
+        | "disputed"
+      schedule_mode:
+        | "daily"
+        | "weekdays"
+        | "weekends"
+        | "by_arrangement"
+        | "mornings_only"
+        | "daytime_only"
+        | "evenings_only"
+      slot_status: "available" | "reserved" | "occupied" | "unavailable"
+      storage_category:
+        | "tires"
+        | "bikes"
+        | "boxes"
+        | "furniture"
+        | "sport"
+        | "seasonal"
+        | "other"
+      user_verification_status:
+        | "unverified"
+        | "pending"
+        | "verified"
+        | "rejected"
+      verification_log_status:
+        | "submitted"
+        | "approved"
+        | "rejected"
+        | "needs_changes"
+      verification_log_type:
+        | "phone"
+        | "email"
+        | "identity_doc"
+        | "ownership_doc"
+        | "object_review"
       verification_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
@@ -423,11 +956,94 @@ export const Constants = {
   public: {
     Enums: {
       access_mode: ["24/7", "scheduled"],
-      app_role: ["admin", "user"],
+      access_mode_ext: [
+        "free_by_arrangement",
+        "pre_approval",
+        "host_present_only",
+        "self_access",
+        "rare_seasonal",
+        "weekends_only",
+        "weekdays_only",
+        "specific_hours",
+      ],
+      app_role: ["admin", "user", "host", "client"],
+      booking_request_status: [
+        "new",
+        "viewed",
+        "accepted",
+        "rejected",
+        "cancelled",
+        "completed",
+        "expired",
+      ],
+      chat_role: ["host", "client", "admin"],
+      chat_type: ["host_client", "admin_host", "admin_client", "support"],
       client_app_status: ["new", "sent_to_host", "completed", "rejected"],
       host_app_status: ["new", "verified", "rejected"],
       lot_category: ["tires", "bikes", "other"],
       lot_status: ["draft", "published", "archived"],
+      message_type: ["text", "system", "file"],
+      object_status: [
+        "draft",
+        "pending_review",
+        "needs_changes",
+        "verified",
+        "published",
+        "hidden",
+        "archived",
+      ],
+      object_verification_status: [
+        "not_submitted",
+        "pending",
+        "approved",
+        "rejected",
+        "needs_changes",
+      ],
+      placement_status: [
+        "upcoming",
+        "active",
+        "completed",
+        "cancelled",
+        "disputed",
+      ],
+      schedule_mode: [
+        "daily",
+        "weekdays",
+        "weekends",
+        "by_arrangement",
+        "mornings_only",
+        "daytime_only",
+        "evenings_only",
+      ],
+      slot_status: ["available", "reserved", "occupied", "unavailable"],
+      storage_category: [
+        "tires",
+        "bikes",
+        "boxes",
+        "furniture",
+        "sport",
+        "seasonal",
+        "other",
+      ],
+      user_verification_status: [
+        "unverified",
+        "pending",
+        "verified",
+        "rejected",
+      ],
+      verification_log_status: [
+        "submitted",
+        "approved",
+        "rejected",
+        "needs_changes",
+      ],
+      verification_log_type: [
+        "phone",
+        "email",
+        "identity_doc",
+        "ownership_doc",
+        "object_review",
+      ],
       verification_status: ["pending", "approved", "rejected"],
     },
   },
