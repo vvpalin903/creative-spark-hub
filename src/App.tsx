@@ -15,7 +15,6 @@ import DashboardPicker from "./pages/DashboardPicker";
 import HostDashboard from "./pages/HostDashboard";
 import ClientDashboard from "./pages/ClientDashboard";
 import Document from "./pages/Document";
-import HostVerification from "./pages/HostVerification";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -37,7 +36,6 @@ const App = () => (
             <Route path="/dashboard/host/*" element={<ProtectedRoute requireRole="host"><HostDashboard /></ProtectedRoute>} />
             <Route path="/dashboard/client/*" element={<ProtectedRoute requireRole="client"><ClientDashboard /></ProtectedRoute>} />
             <Route path="/admin" element={<Admin />} />
-            <Route path="/host/verification" element={<HostVerification />} />
             <Route path="/docs/:slug" element={<Document />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
