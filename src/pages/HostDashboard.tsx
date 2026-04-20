@@ -286,8 +286,8 @@ function HistoryTab() {
         </TableHeader>
         <TableBody>
           {placements?.map((p: any) => {
-            const clientName = p.booking_requests?.client_name || "Клиент";
-            const clientUserId = p.client_user_id || p.booking_requests?.client_user_id;
+            const clientName = p.client_name || "Клиент";
+            const clientUserId = p.client_user_id;
             return (
               <TableRow key={p.id}>
                 <TableCell>
