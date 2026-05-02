@@ -93,7 +93,7 @@ export function Header() {
                     Мой кабинет
                   </DropdownMenuItem>
                 )}
-                {isAdmin && (
+                {isStaff && (
                   <DropdownMenuItem onClick={() => navigate("/admin")}>
                     Админка
                   </DropdownMenuItem>
@@ -159,7 +159,7 @@ export function Header() {
                       Кабинет клиента
                     </Link>
                   )}
-                  {isAdmin && (
+                  {isStaff && (
                     <Link to="/admin" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">
                       Админка
                     </Link>
