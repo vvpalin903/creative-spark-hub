@@ -13,6 +13,8 @@ interface AuthContextValue {
   isHost: boolean;
   isClient: boolean;
   isAdmin: boolean;
+  isBackOffice: boolean;
+  isStaff: boolean;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
 }
