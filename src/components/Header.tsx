@@ -25,7 +25,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { session, user, isHost, isClient, isAdmin, signOut } = useAuth();
+  const { session, user, isHost, isClient, isStaff, signOut } = useAuth();
   const { data: unread } = useUnreadMessages();
   const unreadTotal = unread?.total || 0;
 
