@@ -186,6 +186,22 @@ function RequestsTab() {
     },
   });
 
+  const confirmPlacement = useMutation({
+    mutationFn: async (id: string) => {
+      const { data, error } = await supabase.functions.invoke("confirm-placement", {
+        body: { request_id: id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["host", "requests"] });
+      queryClient.invalidateQueries({ queryKey: ["host", "placements"] });
+      toast({ title: "Размещение подтверждено" });
+    },
+    onError: (e: any) => toast({ title: "Не удалось подтвердить", description: e.message, variant: "destructive" }),
+  });
+
   if (isLoading) return <p className="text-sm text-muted-foreground">Загрузка...</p>;
 
   return (
@@ -198,6 +214,7 @@ function RequestsTab() {
             <TableHead>Клиент</TableHead>
             <TableHead>Период</TableHead>
             <TableHead>Статус</TableHead>
+            <TableHead>Действия</TableHead>
             <TableHead>Чат</TableHead>
           </TableRow>
         </TableHeader>
@@ -229,13 +246,26 @@ function RequestsTab() {
                 </Select>
               </TableCell>
               <TableCell>
+                {(["new", "viewed"].includes(r.request_status) && r.start_date && r.slot_id) ? (
+                  <Button
+                    size="sm"
+                    onClick={() => confirmPlacement.mutate(r.id)}
+                    disabled={confirmPlacement.isPending}
+                  >
+                    Подтвердить размещение
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
                 <RequestChatLink requestId={r.id} role="host" />
               </TableCell>
             </TableRow>
           ))}
           {(!requests || requests.length === 0) && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Заявок пока нет</TableCell>
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Заявок пока нет</TableCell>
             </TableRow>
           )}
         </TableBody>

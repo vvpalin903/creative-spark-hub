@@ -5,3 +5,12 @@ verify_jwt = false
 
 [functions.send-notification]
 verify_jwt = false
+
+[functions.expire-stale-requests]
+verify_jwt = false
+
+[functions.confirm-placement]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = false

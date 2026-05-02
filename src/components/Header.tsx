@@ -12,6 +12,7 @@ import {
 import logo from "@/assets/logo.png";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
+import { NotificationsBell } from "@/components/NotificationsBell";
 
 const navItems = [
   { label: "Снять место", href: "/rent" },
@@ -62,6 +63,7 @@ export function Header() {
         </nav>
 
         <div className="hidden md:flex items-center gap-2">
+          {session && <NotificationsBell />}
           {session ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -96,6 +98,9 @@ export function Header() {
                     Админка
                   </DropdownMenuItem>
                 )}
+                <DropdownMenuItem onClick={() => navigate("/profile")}>
+                  Профиль и настройки
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={async () => {
