@@ -297,6 +297,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       placements: {
         Row: {
           booking_request_id: string
@@ -366,11 +399,13 @@ export type Database = {
           avatar_url: string | null
           city: string | null
           created_at: string
+          deleted_at: string | null
           district: string | null
           email: string | null
           email_verified: boolean
           id: string
           name: string | null
+          notification_prefs: Json
           phone: string | null
           phone_verified: boolean
           updated_at: string
@@ -381,11 +416,13 @@ export type Database = {
           avatar_url?: string | null
           city?: string | null
           created_at?: string
+          deleted_at?: string | null
           district?: string | null
           email?: string | null
           email_verified?: boolean
           id?: string
           name?: string | null
+          notification_prefs?: Json
           phone?: string | null
           phone_verified?: boolean
           updated_at?: string
@@ -396,11 +433,13 @@ export type Database = {
           avatar_url?: string | null
           city?: string | null
           created_at?: string
+          deleted_at?: string | null
           district?: string | null
           email?: string | null
           email_verified?: boolean
           id?: string
           name?: string | null
+          notification_prefs?: Json
           phone?: string | null
           phone_verified?: boolean
           updated_at?: string
@@ -624,6 +663,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_notification: {
+        Args: {
+          _body?: string
+          _link?: string
+          _title: string
+          _type: string
+          _user_id: string
+        }
+        Returns: string
+      }
       get_host_public_stats: {
         Args: { _host_user_id: string }
         Returns: {
