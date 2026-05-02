@@ -23,7 +23,7 @@ import { HostRating } from "@/components/reviews/HostRating";
 export default function LotDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isHost, isClient } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
 
@@ -101,6 +101,14 @@ export default function LotDetail() {
     e.preventDefault();
     if (!user) {
       navigate(`/auth?next=${encodeURIComponent(`/lot/${id}`)}`);
+      return;
+    }
+    if (isHost && !isClient) {
+      toast({
+        title: "Действие недоступно",
+        description: "Для того чтобы снять место, необходимо зарегистрироваться как клиент на отдельную учётную запись.",
+        variant: "destructive",
+      });
       return;
     }
     const fd = new FormData(e.currentTarget);
@@ -297,6 +305,15 @@ export default function LotDetail() {
                         <LogIn className="h-4 w-4 mr-2" /> Войти и оставить заявку
                       </Link>
                     </Button>
+                  </div>
+                ) : isHost && !isClient ? (
+                  <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                    <p className="text-sm font-medium text-foreground">
+                      Бронирование недоступно для аккаунта хоста
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Для того чтобы снять место, необходимо зарегистрироваться как клиент на отдельную учётную запись.
+                    </p>
                   </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">

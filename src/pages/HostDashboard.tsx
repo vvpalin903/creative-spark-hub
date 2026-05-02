@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle } from "lucide-react";
+import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle, EyeOff, Eye } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
 import { ReviewButton } from "@/components/reviews/ReviewButton";
@@ -78,7 +78,21 @@ function ObjectsTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
-      toast({ title: "Объект отправлен на проверку" });
+      toast({ title: "Объект отправлен на публикацию" });
+    },
+  });
+
+  const toggleHidden = useMutation({
+    mutationFn: async ({ id, hide }: { id: string; hide: boolean }) => {
+      const { error } = await supabase
+        .from("host_objects")
+        .update({ object_status: hide ? "hidden" : "published" })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
+      toast({ title: "Статус обновлён" });
     },
   });
 
@@ -100,7 +114,7 @@ function ObjectsTab() {
           <CardContent className="py-12 text-center">
             <Building2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="font-medium text-foreground mb-1">Пока нет объектов</p>
-            <p className="text-sm text-muted-foreground mb-4">Создайте первый объект и отправьте его на проверку</p>
+            <p className="text-sm text-muted-foreground mb-4">Создайте первый объект и опубликуйте его</p>
             <Button onClick={() => { setEditing(null); setOpen(true); }}>
               <Plus className="h-4 w-4 mr-2" /> Создать объект
             </Button>
@@ -131,10 +145,20 @@ function ObjectsTab() {
                         <span>Верификация: {objectVerificationStatusLabels[obj.verification_status]}</span>
                       </div>
                     </Link>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-2 shrink-0 flex-wrap">
                       {obj.object_status === "draft" && (
                         <Button size="sm" variant="default" onClick={() => submitForReview.mutate(obj.id)} disabled={submitForReview.isPending}>
-                          <Send className="h-3.5 w-3.5 mr-1" /> На проверку
+                          <Send className="h-3.5 w-3.5 mr-1" /> Опубликовать
+                        </Button>
+                      )}
+                      {obj.object_status === "published" && (
+                        <Button size="sm" variant="outline" onClick={() => toggleHidden.mutate({ id: obj.id, hide: true })} disabled={toggleHidden.isPending}>
+                          <EyeOff className="h-3.5 w-3.5 mr-1" /> Скрыть
+                        </Button>
+                      )}
+                      {obj.object_status === "hidden" && (
+                        <Button size="sm" variant="outline" onClick={() => toggleHidden.mutate({ id: obj.id, hide: false })} disabled={toggleHidden.isPending}>
+                          <Eye className="h-3.5 w-3.5 mr-1" /> Опубликовать
                         </Button>
                       )}
                       <Button size="sm" variant="outline" onClick={() => { setEditing(obj); setOpen(true); }}>
@@ -239,9 +263,11 @@ function RequestsTab() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
+                    {Object.entries(bookingRequestStatusLabels)
+                      .filter(([k]) => !["viewed", "cancelled"].includes(k))
+                      .map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </TableCell>

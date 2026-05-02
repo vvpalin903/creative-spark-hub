@@ -117,7 +117,7 @@ export default function HostObjectDetail() {
           <div className="flex gap-2 flex-wrap">
             {isDraft && (
               <Button size="sm" onClick={() => submitForReview.mutate()} disabled={submitForReview.isPending}>
-                <Send className="h-4 w-4 mr-1" /> На проверку
+                <Send className="h-4 w-4 mr-1" /> Опубликовать
               </Button>
             )}
             {isPublished && (

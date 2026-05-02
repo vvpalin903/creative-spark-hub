@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -13,8 +14,9 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Trash2 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { Loader2, Trash2, Star } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
 
 interface Prefs {
   email_new_request: boolean;
@@ -29,7 +31,7 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 export default function Profile() {
-  const { user, signOut } = useAuth();
+  const { user, signOut, isHost } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -123,6 +125,8 @@ export default function Profile() {
           </CardContent>
         </Card>
 
+        {isHost && user && <MyReviewsCard userId={user.id} />}
+
         <Card>
           <CardHeader><CardTitle>Email-уведомления</CardTitle></CardHeader>
           <CardContent className="space-y-3">
@@ -184,5 +188,103 @@ export default function Profile() {
         </Card>
       </div>
     </Layout>
+  );
+}
+
+function MyReviewsCard({ userId }: { userId: string }) {
+  const { data: rating } = useQuery({
+    queryKey: ["my-host-rating", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("get_host_rating", { _host_user_id: userId });
+      if (error) throw error;
+      const row = Array.isArray(data) ? data[0] : data;
+      return row as { avg_rating: number | null; review_count: number } | null;
+    },
+  });
+
+  const { data: reviews, isLoading } = useQuery({
+    queryKey: ["my-host-reviews", userId],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, rater_user_id, rater_role")
+        .eq("ratee_user_id", userId)
+        .eq("rater_role", "client")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const raterIds = Array.from(new Set((reviews || []).map((r) => r.rater_user_id)));
+  const { data: raters } = useQuery({
+    queryKey: ["my-host-reviews-raters", userId, raterIds.join(",")],
+    queryFn: async () => {
+      if (raterIds.length === 0) return {} as Record<string, string>;
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, name")
+        .in("user_id", raterIds);
+      if (error) throw error;
+      const map: Record<string, string> = {};
+      (data || []).forEach((p) => { map[p.user_id] = p.name || "Клиент"; });
+      return map;
+    },
+    enabled: raterIds.length > 0,
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span>Мои отзывы</span>
+          {rating?.review_count ? (
+            <span className="text-sm font-normal inline-flex items-center gap-1">
+              <Star className="h-4 w-4 fill-warning text-warning" />
+              <span className="font-semibold">{Number(rating.avg_rating ?? 0).toFixed(1)}</span>
+              <span className="text-muted-foreground">· {Number(rating.review_count)}</span>
+            </span>
+          ) : null}
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : !reviews || reviews.length === 0 ? (
+          <p className="text-sm text-muted-foreground">У вас пока нет отзывов от клиентов.</p>
+        ) : (
+          <div className="space-y-3">
+            {reviews.map((r) => (
+              <div key={r.id} className="border rounded-md p-3">
+                <div className="flex items-center justify-between gap-2 mb-1">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-medium text-foreground truncate">
+                      {raters?.[r.rater_user_id] || "Клиент"}
+                    </span>
+                    <span className="inline-flex items-center gap-0.5">
+                      {Array.from({ length: 5 }).map((_, i) => (
+                        <Star
+                          key={i}
+                          className={`h-3.5 w-3.5 ${i < r.rating ? "fill-warning text-warning" : "text-muted-foreground/40"}`}
+                        />
+                      ))}
+                    </span>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(r.created_at).toLocaleDateString("ru-RU", { day: "2-digit", month: "short", year: "numeric" })}
+                  </span>
+                </div>
+                {r.comment && (
+                  <p className="text-sm text-muted-foreground whitespace-pre-line">{r.comment}</p>
+                )}
+              </div>
+            ))}
+            <Link to={`/host/${userId}`} className="text-sm text-primary hover:underline inline-block">
+              Открыть публичный профиль
+            </Link>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
