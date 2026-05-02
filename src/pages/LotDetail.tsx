@@ -104,11 +104,38 @@ export default function LotDetail() {
       return;
     }
     const fd = new FormData(e.currentTarget);
-    submit.mutate({
-      startDate: (fd.get("start_date") as string) || "",
-      endDate: (fd.get("end_date") as string) || "",
-      comment: (fd.get("comment") as string) || "",
-    });
+    const startDate = (fd.get("start_date") as string) || "";
+    const endDate = (fd.get("end_date") as string) || "";
+    const comment = ((fd.get("comment") as string) || "").trim();
+
+    const slotsList = (object as any)?.storage_slots || [];
+    if (slotsList.length > 0 && !selectedSlot) {
+      toast({ title: "Выберите слот", variant: "destructive" });
+      return;
+    }
+    if (!startDate || !endDate) {
+      toast({ title: "Укажите даты", description: "Заполните «С» и «По»", variant: "destructive" });
+      return;
+    }
+    if (endDate < startDate) {
+      toast({ title: "Неверные даты", description: "Дата «По» должна быть позже «С»", variant: "destructive" });
+      return;
+    }
+    if (!comment) {
+      toast({ title: "Добавьте комментарий", description: "Опишите, что планируете хранить", variant: "destructive" });
+      return;
+    }
+    const selected = slotsList.find((s: any) => s.id === selectedSlot);
+    if (selected?.category === "other" && comment.length < 10) {
+      toast({
+        title: "Уточните, что хранить",
+        description: "Для категории «Другое» опишите содержимое подробнее (минимум 10 символов)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    submit.mutate({ startDate, endDate, comment });
   };
 
   if (isLoading || authLoading) {
