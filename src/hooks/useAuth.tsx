@@ -13,6 +13,8 @@ interface AuthContextValue {
   isHost: boolean;
   isClient: boolean;
   isAdmin: boolean;
+  isBackOffice: boolean;
+  isStaff: boolean;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
 }
@@ -76,6 +78,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isHost: roles.includes("host"),
         isClient: roles.includes("client"),
         isAdmin: roles.includes("admin"),
+        isBackOffice: roles.includes("back_office" as AppRole),
+        isStaff: roles.includes("admin") || roles.includes("back_office" as AppRole),
         signOut,
         refreshRoles,
       }}

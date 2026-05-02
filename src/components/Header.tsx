@@ -25,7 +25,7 @@ export function Header() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { session, user, isHost, isClient, isAdmin, signOut } = useAuth();
+  const { session, user, isHost, isClient, isStaff, signOut } = useAuth();
   const { data: unread } = useUnreadMessages();
   const unreadTotal = unread?.total || 0;
 
@@ -93,7 +93,7 @@ export function Header() {
                     Мой кабинет
                   </DropdownMenuItem>
                 )}
-                {isAdmin && (
+                {isStaff && (
                   <DropdownMenuItem onClick={() => navigate("/admin")}>
                     Админка
                   </DropdownMenuItem>
@@ -159,7 +159,7 @@ export function Header() {
                       Кабинет клиента
                     </Link>
                   )}
-                  {isAdmin && (
+                  {isStaff && (
                     <Link to="/admin" onClick={() => setMobileOpen(false)} className="block py-2 text-sm font-medium">
                       Админка
                     </Link>

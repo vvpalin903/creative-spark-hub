@@ -27,6 +27,7 @@ export default function Admin() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
@@ -36,13 +37,21 @@ export default function Admin() {
 
     const checkRole = async (userId: string) => {
       try {
-        const { data } = await supabase.rpc("has_role", {
+        const { data: adminData } = await supabase.rpc("has_role", {
           _user_id: userId,
           _role: "admin" as Enums<"app_role">,
         });
-        if (mounted) setIsAdmin(!!data);
+        if (adminData) {
+          if (mounted) { setIsAdmin(true); setIsRealAdmin(true); setLoading(false); }
+          return;
+        }
+        const { data: boData } = await supabase.rpc("has_role", {
+          _user_id: userId,
+          _role: "back_office" as Enums<"app_role">,
+        });
+        if (mounted) { setIsAdmin(!!boData); setIsRealAdmin(false); }
       } catch {
-        if (mounted) setIsAdmin(false);
+        if (mounted) { setIsAdmin(false); setIsRealAdmin(false); }
       }
       if (mounted) setLoading(false);
     };
@@ -64,6 +73,7 @@ export default function Admin() {
         checkRole(s.user.id);
       } else {
         setIsAdmin(false);
+        setIsRealAdmin(false);
         setLoading(false);
       }
     });
@@ -124,15 +134,17 @@ export default function Admin() {
     );
   }
 
-  return <AdminDashboard />;
+  return <AdminDashboard isRealAdmin={isRealAdmin} />;
 }
 
-function AdminDashboard() {
+function AdminDashboard({ isRealAdmin }: { isRealAdmin: boolean }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container flex h-14 items-center justify-between">
-          <h1 className="font-bold text-foreground">Админ-панель</h1>
+          <h1 className="font-bold text-foreground">
+            {isRealAdmin ? "Админ-панель" : "Бэк-офис"}
+          </h1>
           <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
             <LogOut className="h-4 w-4 mr-2" /> Выйти
           </Button>
@@ -151,7 +163,7 @@ function AdminDashboard() {
 
           <TabsContent value="objects"><ObjectsTab /></TabsContent>
           <TabsContent value="requests"><RequestsTab /></TabsContent>
-          <TabsContent value="users"><UsersTab /></TabsContent>
+          <TabsContent value="users"><UsersTab isRealAdmin={isRealAdmin} /></TabsContent>
           <TabsContent value="verification"><VerificationDocsTab /></TabsContent>
           <TabsContent value="documents"><DocumentsTab /></TabsContent>
         </Tabs>
@@ -349,7 +361,10 @@ function RequestsTab() {
 }
 
 /* -------- Users -------- */
-function UsersTab() {
+const ALL_ROLES: Enums<"app_role">[] = ["client", "host", "back_office", "admin"];
+
+function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
+  const queryClient = useQueryClient();
   const { data: profiles } = useQuery({
     queryKey: ["admin", "profiles"],
     queryFn: async () => {
@@ -371,10 +386,30 @@ function UsersTab() {
     },
   });
 
-  const rolesByUser = (roles || []).reduce<Record<string, string[]>>((acc, r) => {
-    acc[r.user_id] = [...(acc[r.user_id] || []), r.role];
+  const rolesByUser = (roles || []).reduce<Record<string, Enums<"app_role">[]>>((acc, r) => {
+    acc[r.user_id] = [...(acc[r.user_id] || []), r.role as Enums<"app_role">];
     return acc;
   }, {});
+
+  const toggleRole = useMutation({
+    mutationFn: async ({ userId, role, has }: { userId: string; role: Enums<"app_role">; has: boolean }) => {
+      if (role === "admin" && !isRealAdmin) {
+        throw new Error("Только администратор может управлять ролью admin");
+      }
+      if (has) {
+        const { error } = await supabase.from("user_roles").delete().eq("user_id", userId).eq("role", role);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("user_roles").insert({ user_id: userId, role });
+        if (error) throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "user_roles"] });
+      toast({ title: "Роли обновлены" });
+    },
+    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+  });
 
   return (
     <div className="rounded-lg border overflow-auto">
@@ -390,26 +425,43 @@ function UsersTab() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {profiles?.map((p) => (
-            <TableRow key={p.id}>
-              <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
-              <TableCell>{p.name || "—"}</TableCell>
-              <TableCell className="text-sm">{p.email || "—"}</TableCell>
-              <TableCell className="text-sm">{p.phone || "—"}</TableCell>
-              <TableCell className="text-xs">
-                <div className="flex gap-1 flex-wrap">
-                  {(rolesByUser[p.user_id] || []).map((r) => (
-                    <Badge key={r} variant="secondary">{r}</Badge>
-                  ))}
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
-                  {userVerificationStatusLabels[p.verification_status]}
-                </span>
-              </TableCell>
-            </TableRow>
-          ))}
+          {profiles?.map((p) => {
+            const userRoles = rolesByUser[p.user_id] || [];
+            return (
+              <TableRow key={p.id}>
+                <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell>{p.name || "—"}</TableCell>
+                <TableCell className="text-sm">{p.email || "—"}</TableCell>
+                <TableCell className="text-sm">{p.phone || "—"}</TableCell>
+                <TableCell className="text-xs">
+                  <div className="flex gap-1 flex-wrap">
+                    {ALL_ROLES.map((r) => {
+                      const has = userRoles.includes(r);
+                      const disabled = r === "admin" && !isRealAdmin;
+                      return (
+                        <button
+                          key={r}
+                          disabled={disabled || toggleRole.isPending}
+                          onClick={() => toggleRole.mutate({ userId: p.user_id, role: r, has })}
+                          className={`px-2 py-0.5 rounded border text-xs transition-colors ${
+                            has ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border hover:bg-accent"
+                          } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
+                          title={disabled ? "Только администратор" : has ? "Снять роль" : "Выдать роль"}
+                        >
+                          {r}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
+                    {userVerificationStatusLabels[p.verification_status]}
+                  </span>
+                </TableCell>
+              </TableRow>
+            );
+          })}
           {(!profiles || profiles.length === 0) && (
             <TableRow>
               <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>

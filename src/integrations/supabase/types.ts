@@ -687,6 +687,7 @@ export type Database = {
           review_count: number
         }[]
       }
+      has_admin_access: { Args: { _user_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -710,7 +711,7 @@ export type Database = {
         | "weekends_only"
         | "weekdays_only"
         | "specific_hours"
-      app_role: "admin" | "user" | "host" | "client"
+      app_role: "admin" | "user" | "host" | "client" | "back_office"
       booking_request_status:
         | "new"
         | "viewed"
@@ -918,7 +919,7 @@ export const Constants = {
         "weekdays_only",
         "specific_hours",
       ],
-      app_role: ["admin", "user", "host", "client"],
+      app_role: ["admin", "user", "host", "client", "back_office"],
       booking_request_status: [
         "new",
         "viewed",
