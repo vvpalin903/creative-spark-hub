@@ -710,7 +710,7 @@ export type Database = {
         | "weekends_only"
         | "weekdays_only"
         | "specific_hours"
-      app_role: "admin" | "user" | "host" | "client"
+      app_role: "admin" | "user" | "host" | "client" | "back_office"
       booking_request_status:
         | "new"
         | "viewed"
@@ -918,7 +918,7 @@ export const Constants = {
         "weekdays_only",
         "specific_hours",
       ],
-      app_role: ["admin", "user", "host", "client"],
+      app_role: ["admin", "user", "host", "client", "back_office"],
       booking_request_status: [
         "new",
         "viewed",
