@@ -125,6 +125,8 @@ export default function Profile() {
           </CardContent>
         </Card>
 
+        {isHost && user && <MyReviewsCard userId={user.id} />}
+
         <Card>
           <CardHeader><CardTitle>Email-уведомления</CardTitle></CardHeader>
           <CardContent className="space-y-3">
