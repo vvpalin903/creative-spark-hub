@@ -114,7 +114,7 @@ function ObjectsTab() {
           <CardContent className="py-12 text-center">
             <Building2 className="h-10 w-10 text-muted-foreground mx-auto mb-3" />
             <p className="font-medium text-foreground mb-1">Пока нет объектов</p>
-            <p className="text-sm text-muted-foreground mb-4">Создайте первый объект и отправьте его на проверку</p>
+            <p className="text-sm text-muted-foreground mb-4">Создайте первый объект и опубликуйте его</p>
             <Button onClick={() => { setEditing(null); setOpen(true); }}>
               <Plus className="h-4 w-4 mr-2" /> Создать объект
             </Button>
@@ -263,9 +263,11 @@ function RequestsTab() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
+                    {Object.entries(bookingRequestStatusLabels)
+                      .filter(([k]) => !["viewed", "cancelled"].includes(k))
+                      .map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
                   </SelectContent>
                 </Select>
               </TableCell>
