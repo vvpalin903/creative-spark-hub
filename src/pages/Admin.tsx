@@ -36,11 +36,19 @@ export default function Admin() {
 
     const checkRole = async (userId: string) => {
       try {
-        const { data } = await supabase.rpc("has_role", {
+        const { data: adminData } = await supabase.rpc("has_role", {
           _user_id: userId,
           _role: "admin" as Enums<"app_role">,
         });
-        if (mounted) setIsAdmin(!!data);
+        if (adminData) {
+          if (mounted) { setIsAdmin(true); setLoading(false); }
+          return;
+        }
+        const { data: boData } = await supabase.rpc("has_role", {
+          _user_id: userId,
+          _role: "back_office" as Enums<"app_role">,
+        });
+        if (mounted) setIsAdmin(!!boData);
       } catch {
         if (mounted) setIsAdmin(false);
       }
