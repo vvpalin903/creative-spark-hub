@@ -104,11 +104,38 @@ export default function LotDetail() {
       return;
     }
     const fd = new FormData(e.currentTarget);
-    submit.mutate({
-      startDate: (fd.get("start_date") as string) || "",
-      endDate: (fd.get("end_date") as string) || "",
-      comment: (fd.get("comment") as string) || "",
-    });
+    const startDate = (fd.get("start_date") as string) || "";
+    const endDate = (fd.get("end_date") as string) || "";
+    const comment = ((fd.get("comment") as string) || "").trim();
+
+    const slotsList = (object as any)?.storage_slots || [];
+    if (slotsList.length > 0 && !selectedSlot) {
+      toast({ title: "Выберите слот", variant: "destructive" });
+      return;
+    }
+    if (!startDate || !endDate) {
+      toast({ title: "Укажите даты", description: "Заполните «С» и «По»", variant: "destructive" });
+      return;
+    }
+    if (endDate < startDate) {
+      toast({ title: "Неверные даты", description: "Дата «По» должна быть позже «С»", variant: "destructive" });
+      return;
+    }
+    if (!comment) {
+      toast({ title: "Добавьте комментарий", description: "Опишите, что планируете хранить", variant: "destructive" });
+      return;
+    }
+    const selected = slotsList.find((s: any) => s.id === selectedSlot);
+    if (selected?.category === "other" && comment.length < 10) {
+      toast({
+        title: "Уточните, что хранить",
+        description: "Для категории «Другое» опишите содержимое подробнее (минимум 10 символов)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    submit.mutate({ startDate, endDate, comment });
   };
 
   if (isLoading || authLoading) {
@@ -275,14 +302,15 @@ export default function LotDetail() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {slots.length > 0 && (
                       <div>
-                        <Label htmlFor="slot">Слот</Label>
+                        <Label htmlFor="slot">Слот <span className="text-destructive">*</span></Label>
                         <select
                           id="slot"
                           className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                           value={selectedSlot}
                           onChange={(e) => setSelectedSlot(e.target.value)}
+                          required
                         >
-                          <option value="">Любой подходящий</option>
+                          <option value="">Выберите слот</option>
                           {slots.map((s: any) => (
                             <option key={s.id} value={s.id}>
                               {storageCategoryLabels[s.category] || s.category}
@@ -294,23 +322,45 @@ export default function LotDetail() {
                     )}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label htmlFor="start_date">С</Label>
-                        <Input id="start_date" name="start_date" type="date" />
+                        <Label htmlFor="start_date">С <span className="text-destructive">*</span></Label>
+                        <Input id="start_date" name="start_date" type="date" required />
                       </div>
                       <div>
-                        <Label htmlFor="end_date">По</Label>
-                        <Input id="end_date" name="end_date" type="date" />
+                        <Label htmlFor="end_date">По <span className="text-destructive">*</span></Label>
+                        <Input id="end_date" name="end_date" type="date" required />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="comment">Комментарий</Label>
-                      <Textarea id="comment" name="comment" maxLength={500} rows={3} placeholder="Что хотите хранить, особенности" />
-                    </div>
-                    {(!profile?.phone || !profile?.name) && (
-                      <p className="text-xs text-warning">
-                        Заполните имя и телефон в кабинете, чтобы хост мог связаться.
-                      </p>
-                    )}
+                    {(() => {
+                      const sel = (slots as any[]).find((s: any) => s.id === selectedSlot);
+                      const isOther = sel?.category === "other";
+                      return (
+                        <div>
+                          <Label htmlFor="comment">
+                            Комментарий <span className="text-destructive">*</span>
+                          </Label>
+                          <Textarea
+                            id="comment"
+                            name="comment"
+                            maxLength={500}
+                            rows={3}
+                            required
+                            placeholder={
+                              isOther
+                                ? "Обязательно укажите, что именно будете хранить"
+                                : "Что хотите хранить, особенности"
+                            }
+                          />
+                          {isOther && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Для категории «Другое» опишите содержимое подробнее (минимум 10 символов).
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground">
+                      Заполните слот, даты и комментарий — все поля обязательны.
+                    </p>
                     <Button type="submit" className="w-full" disabled={submit.isPending}>
                       {submit.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Отправить заявку
