@@ -246,13 +246,26 @@ function RequestsTab() {
                 </Select>
               </TableCell>
               <TableCell>
+                {(["new", "viewed"].includes(r.request_status) && r.start_date && r.slot_id) ? (
+                  <Button
+                    size="sm"
+                    onClick={() => confirmPlacement.mutate(r.id)}
+                    disabled={confirmPlacement.isPending}
+                  >
+                    Подтвердить размещение
+                  </Button>
+                ) : (
+                  <span className="text-xs text-muted-foreground">—</span>
+                )}
+              </TableCell>
+              <TableCell>
                 <RequestChatLink requestId={r.id} role="host" />
               </TableCell>
             </TableRow>
           ))}
           {(!requests || requests.length === 0) && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Заявок пока нет</TableCell>
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Заявок пока нет</TableCell>
             </TableRow>
           )}
         </TableBody>
