@@ -27,6 +27,7 @@ export default function Admin() {
   const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isRealAdmin, setIsRealAdmin] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [authLoading, setAuthLoading] = useState(false);
