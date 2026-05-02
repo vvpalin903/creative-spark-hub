@@ -73,6 +73,7 @@ export default function Admin() {
         checkRole(s.user.id);
       } else {
         setIsAdmin(false);
+        setIsRealAdmin(false);
         setLoading(false);
       }
     });
