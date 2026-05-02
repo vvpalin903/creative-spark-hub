@@ -302,14 +302,15 @@ export default function LotDetail() {
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {slots.length > 0 && (
                       <div>
-                        <Label htmlFor="slot">Слот</Label>
+                        <Label htmlFor="slot">Слот <span className="text-destructive">*</span></Label>
                         <select
                           id="slot"
                           className="w-full h-10 rounded-md border border-input bg-background px-3 text-sm"
                           value={selectedSlot}
                           onChange={(e) => setSelectedSlot(e.target.value)}
+                          required
                         >
-                          <option value="">Любой подходящий</option>
+                          <option value="">Выберите слот</option>
                           {slots.map((s: any) => (
                             <option key={s.id} value={s.id}>
                               {storageCategoryLabels[s.category] || s.category}
@@ -321,23 +322,45 @@ export default function LotDetail() {
                     )}
                     <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <Label htmlFor="start_date">С</Label>
-                        <Input id="start_date" name="start_date" type="date" />
+                        <Label htmlFor="start_date">С <span className="text-destructive">*</span></Label>
+                        <Input id="start_date" name="start_date" type="date" required />
                       </div>
                       <div>
-                        <Label htmlFor="end_date">По</Label>
-                        <Input id="end_date" name="end_date" type="date" />
+                        <Label htmlFor="end_date">По <span className="text-destructive">*</span></Label>
+                        <Input id="end_date" name="end_date" type="date" required />
                       </div>
                     </div>
-                    <div>
-                      <Label htmlFor="comment">Комментарий</Label>
-                      <Textarea id="comment" name="comment" maxLength={500} rows={3} placeholder="Что хотите хранить, особенности" />
-                    </div>
-                    {(!profile?.phone || !profile?.name) && (
-                      <p className="text-xs text-warning">
-                        Заполните имя и телефон в кабинете, чтобы хост мог связаться.
-                      </p>
-                    )}
+                    {(() => {
+                      const sel = (slots as any[]).find((s: any) => s.id === selectedSlot);
+                      const isOther = sel?.category === "other";
+                      return (
+                        <div>
+                          <Label htmlFor="comment">
+                            Комментарий <span className="text-destructive">*</span>
+                          </Label>
+                          <Textarea
+                            id="comment"
+                            name="comment"
+                            maxLength={500}
+                            rows={3}
+                            required
+                            placeholder={
+                              isOther
+                                ? "Обязательно укажите, что именно будете хранить"
+                                : "Что хотите хранить, особенности"
+                            }
+                          />
+                          {isOther && (
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Для категории «Другое» опишите содержимое подробнее (минимум 10 символов).
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })()}
+                    <p className="text-xs text-muted-foreground">
+                      Заполните слот, даты и комментарий — все поля обязательны.
+                    </p>
                     <Button type="submit" className="w-full" disabled={submit.isPending}>
                       {submit.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Отправить заявку
