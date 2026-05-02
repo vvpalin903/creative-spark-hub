@@ -42,16 +42,16 @@ export default function Admin() {
           _role: "admin" as Enums<"app_role">,
         });
         if (adminData) {
-          if (mounted) { setIsAdmin(true); setLoading(false); }
+          if (mounted) { setIsAdmin(true); setIsRealAdmin(true); setLoading(false); }
           return;
         }
         const { data: boData } = await supabase.rpc("has_role", {
           _user_id: userId,
           _role: "back_office" as Enums<"app_role">,
         });
-        if (mounted) setIsAdmin(!!boData);
+        if (mounted) { setIsAdmin(!!boData); setIsRealAdmin(false); }
       } catch {
-        if (mounted) setIsAdmin(false);
+        if (mounted) { setIsAdmin(false); setIsRealAdmin(false); }
       }
       if (mounted) setLoading(false);
     };
