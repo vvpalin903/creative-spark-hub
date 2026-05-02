@@ -23,7 +23,7 @@ import { HostRating } from "@/components/reviews/HostRating";
 export default function LotDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, isHost, isClient } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
 
@@ -101,6 +101,14 @@ export default function LotDetail() {
     e.preventDefault();
     if (!user) {
       navigate(`/auth?next=${encodeURIComponent(`/lot/${id}`)}`);
+      return;
+    }
+    if (isHost && !isClient) {
+      toast({
+        title: "Действие недоступно",
+        description: "Для того чтобы снять место, необходимо зарегистрироваться как клиент на отдельную учётную запись.",
+        variant: "destructive",
+      });
       return;
     }
     const fd = new FormData(e.currentTarget);
