@@ -134,15 +134,17 @@ export default function Admin() {
     );
   }
 
-  return <AdminDashboard />;
+  return <AdminDashboard isRealAdmin={isRealAdmin} />;
 }
 
-function AdminDashboard() {
+function AdminDashboard({ isRealAdmin }: { isRealAdmin: boolean }) {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b bg-card">
         <div className="container flex h-14 items-center justify-between">
-          <h1 className="font-bold text-foreground">Админ-панель</h1>
+          <h1 className="font-bold text-foreground">
+            {isRealAdmin ? "Админ-панель" : "Бэк-офис"}
+          </h1>
           <Button variant="ghost" size="sm" onClick={() => supabase.auth.signOut()}>
             <LogOut className="h-4 w-4 mr-2" /> Выйти
           </Button>
@@ -161,7 +163,7 @@ function AdminDashboard() {
 
           <TabsContent value="objects"><ObjectsTab /></TabsContent>
           <TabsContent value="requests"><RequestsTab /></TabsContent>
-          <TabsContent value="users"><UsersTab /></TabsContent>
+          <TabsContent value="users"><UsersTab isRealAdmin={isRealAdmin} /></TabsContent>
           <TabsContent value="verification"><VerificationDocsTab /></TabsContent>
           <TabsContent value="documents"><DocumentsTab /></TabsContent>
         </Tabs>
