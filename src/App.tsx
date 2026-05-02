@@ -18,6 +18,9 @@ import HostProfile from "./pages/HostProfile";
 import ClientDashboard from "./pages/ClientDashboard";
 import Messages from "./pages/Messages";
 import Document from "./pages/Document";
+import Profile from "./pages/Profile";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,7 +39,10 @@ const App = () => (
             <Route path="/host" element={<Host />} />
             <Route path="/host/:id" element={<HostProfile />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/dashboard" element={<ProtectedRoute><DashboardPicker /></ProtectedRoute>} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
             <Route path="/dashboard/host/objects/:id" element={<ProtectedRoute requireRole="host"><HostObjectDetail /></ProtectedRoute>} />
             <Route path="/dashboard/host/messages" element={<ProtectedRoute requireRole="host"><Messages role="host" /></ProtectedRoute>} />
             <Route path="/dashboard/host/*" element={<ProtectedRoute requireRole="host"><HostDashboard /></ProtectedRoute>} />
