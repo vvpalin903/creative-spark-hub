@@ -306,6 +306,15 @@ export default function LotDetail() {
                       </Link>
                     </Button>
                   </div>
+                ) : isHost && !isClient ? (
+                  <div className="space-y-3 rounded-md border border-destructive/40 bg-destructive/5 p-3">
+                    <p className="text-sm font-medium text-foreground">
+                      Бронирование недоступно для аккаунта хоста
+                    </p>
+                    <p className="text-sm text-muted-foreground">
+                      Для того чтобы снять место, необходимо зарегистрироваться как клиент на отдельную учётную запись.
+                    </p>
+                  </div>
                 ) : (
                   <form onSubmit={handleSubmit} className="space-y-4">
                     {slots.length > 0 && (
