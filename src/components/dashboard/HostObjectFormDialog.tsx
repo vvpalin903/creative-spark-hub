@@ -69,6 +69,7 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     schedule_mode: (object?.schedule_mode || "by_arrangement") as Enums<"schedule_mode">,
     schedule_notes: object?.schedule_notes || "",
   });
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -76,6 +77,13 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     mutationFn: async () => {
       if (!user) throw new Error("Нужна авторизация");
       if (!form.title.trim() || !form.address.trim()) throw new Error("Заполните название и адрес");
+
+      // Для нового объекта проверяем акцепты хоста
+      if (!isEdit) {
+        const required = ["terms", "privacy", "host-rules", HOST_EXTRA_RIGHTS];
+        const missing = required.filter((s) => !accepted[s]);
+        if (missing.length) throw new Error("Подтвердите все обязательные согласия");
+      }
 
       const geo = await geocode(form.address);
 
