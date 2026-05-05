@@ -154,6 +154,18 @@ export default function LotDetail() {
       return;
     }
 
+    // Обязательные акцепты для клиента
+    const requiredSlugs = ["terms", "privacy", "consent-host-transfer"];
+    const missing = requiredSlugs.filter((s) => !accepted[s]);
+    if (missing.length) {
+      toast({
+        title: "Подтвердите условия",
+        description: "Отметьте все обязательные согласия перед отправкой заявки.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     submit.mutate({ startDate, endDate, comment });
   };
 
