@@ -117,9 +117,19 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
         return { id: data.id, created: true };
       }
     },
-    onSuccess: ({ id, created }) => {
+    onSuccess: async ({ id, created }) => {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
       queryClient.invalidateQueries({ queryKey: ["host", "object", id] });
+      if (created) {
+        await logAcceptances({
+          audience: "host",
+          acceptanceType: "host_publish",
+          relatedObjectId: id,
+          textsBySlug: {
+            [HOST_EXTRA_RIGHTS]: defaultHostExtras[0].text,
+          },
+        });
+      }
       toast({ title: isEdit ? "Объект обновлён" : "Объект создан" });
       onOpenChange(false);
       if (created) navigate(`/dashboard/host/objects/${id}`);
