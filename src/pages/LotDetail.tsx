@@ -76,7 +76,7 @@ export default function LotDetail() {
 
       const slot = (object as any).storage_slots?.find((s: any) => s.id === selectedSlot) || null;
 
-      const { error } = await supabase.from("booking_requests").insert({
+      const { data: inserted, error } = await supabase.from("booking_requests").insert({
         object_id: object.id,
         slot_id: slot?.id || null,
         host_user_id: object.host_user_id,
@@ -88,8 +88,16 @@ export default function LotDetail() {
         end_date: form.endDate || null,
         comment: form.comment.trim() || null,
         request_status: "new",
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Логируем акцепты документов с IP/UA на сервере
+      await logAcceptances({
+        audience: "client",
+        acceptanceType: "client_request",
+        relatedRequestId: inserted?.id || null,
+        relatedObjectId: object.id,
+      });
     },
     onSuccess: () => {
       setSubmitted(true);
