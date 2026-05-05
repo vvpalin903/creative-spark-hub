@@ -13,6 +13,12 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { accessModeLabels, scheduleModeLabels } from "@/lib/labels";
 import type { Tables, Enums } from "@/integrations/supabase/types";
+import {
+  AcceptanceCheckboxes,
+  HOST_EXTRA_RIGHTS,
+  defaultHostExtras,
+} from "@/components/legal/AcceptanceCheckboxes";
+import { logAcceptances } from "@/lib/logAcceptance";
 
 interface Props {
   open: boolean;
