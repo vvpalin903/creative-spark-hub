@@ -401,6 +401,11 @@ export default function LotDetail() {
                     <p className="text-xs text-muted-foreground">
                       Заполните слот, даты и комментарий — все поля обязательны.
                     </p>
+                    <AcceptanceCheckboxes
+                      audience="client"
+                      checked={accepted}
+                      onChange={(slug, v) => setAccepted((p) => ({ ...p, [slug]: v }))}
+                    />
                     <Button type="submit" className="w-full" disabled={submit.isPending}>
                       {submit.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Отправить заявку
