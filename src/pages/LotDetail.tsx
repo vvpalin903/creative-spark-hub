@@ -19,6 +19,8 @@ import {
   storageCategoryLabels,
 } from "@/lib/labels";
 import { HostRating } from "@/components/reviews/HostRating";
+import { AcceptanceCheckboxes } from "@/components/legal/AcceptanceCheckboxes";
+import { logAcceptances } from "@/lib/logAcceptance";
 
 export default function LotDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +28,7 @@ export default function LotDetail() {
   const { user, loading: authLoading, isHost, isClient } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
 
   const { data: object, isLoading } = useQuery({
     queryKey: ["public", "object", id],
