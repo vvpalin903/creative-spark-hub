@@ -1,7 +1,23 @@
 import { Link } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.png";
 
 export function Footer() {
+  const { data: docs } = useQuery({
+    queryKey: ["footer-docs"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("site_documents")
+        .select("slug, title, short_title")
+        .eq("is_active", true)
+        .eq("show_in_footer", true)
+        .order("slug");
+      if (error) throw error;
+      return data;
+    },
+  });
+
   return (
     <footer className="border-t bg-secondary/50">
       <div className="container py-10">
@@ -29,8 +45,16 @@ export function Footer() {
           <div>
             <h4 className="font-semibold text-foreground mb-3">Документы</h4>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link to="/docs/privacy" className="hover:text-primary transition-colors">Политика конфиденциальности</Link></li>
-              <li><Link to="/docs/terms" className="hover:text-primary transition-colors">Пользовательское соглашение</Link></li>
+              {docs?.map((d) => (
+                <li key={d.slug}>
+                  <Link to={`/docs/${d.slug}`} className="hover:text-primary transition-colors">
+                    {d.short_title || d.title}
+                  </Link>
+                </li>
+              ))}
+              {(!docs || docs.length === 0) && (
+                <li className="text-xs">Документы загружаются…</li>
+              )}
             </ul>
           </div>
         </div>
