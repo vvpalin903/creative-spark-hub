@@ -216,14 +216,22 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           </div>
 
           {!isEdit && (
-            <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
-              После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
-            </p>
+            <>
+              <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
+                После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
+              </p>
+              <AcceptanceCheckboxes
+                audience="host"
+                checked={accepted}
+                onChange={(slug, v) => setAccepted((p) => ({ ...p, [slug]: v }))}
+                extraItems={defaultHostExtras}
+              />
+            </>
           )}
 
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {isEdit ? "Сохранить" : "Создать"}
+            {isEdit ? "Сохранить" : "Опубликовать"}
           </Button>
         </form>
       </DialogContent>
