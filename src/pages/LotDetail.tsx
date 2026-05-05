@@ -19,6 +19,8 @@ import {
   storageCategoryLabels,
 } from "@/lib/labels";
 import { HostRating } from "@/components/reviews/HostRating";
+import { AcceptanceCheckboxes } from "@/components/legal/AcceptanceCheckboxes";
+import { logAcceptances } from "@/lib/logAcceptance";
 
 export default function LotDetail() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +28,7 @@ export default function LotDetail() {
   const { user, loading: authLoading, isHost, isClient } = useAuth();
   const [submitted, setSubmitted] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<string>("");
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
 
   const { data: object, isLoading } = useQuery({
     queryKey: ["public", "object", id],
@@ -73,7 +76,7 @@ export default function LotDetail() {
 
       const slot = (object as any).storage_slots?.find((s: any) => s.id === selectedSlot) || null;
 
-      const { error } = await supabase.from("booking_requests").insert({
+      const { data: inserted, error } = await supabase.from("booking_requests").insert({
         object_id: object.id,
         slot_id: slot?.id || null,
         host_user_id: object.host_user_id,
@@ -85,8 +88,16 @@ export default function LotDetail() {
         end_date: form.endDate || null,
         comment: form.comment.trim() || null,
         request_status: "new",
-      });
+      }).select("id").single();
       if (error) throw error;
+
+      // Логируем акцепты документов с IP/UA на сервере
+      await logAcceptances({
+        audience: "client",
+        acceptanceType: "client_request",
+        relatedRequestId: inserted?.id || null,
+        relatedObjectId: object.id,
+      });
     },
     onSuccess: () => {
       setSubmitted(true);
@@ -138,6 +149,18 @@ export default function LotDetail() {
       toast({
         title: "Уточните, что хранить",
         description: "Для категории «Другое» опишите содержимое подробнее (минимум 10 символов)",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Обязательные акцепты для клиента
+    const requiredSlugs = ["terms", "privacy", "consent-host-transfer"];
+    const missing = requiredSlugs.filter((s) => !accepted[s]);
+    if (missing.length) {
+      toast({
+        title: "Подтвердите условия",
+        description: "Отметьте все обязательные согласия перед отправкой заявки.",
         variant: "destructive",
       });
       return;
@@ -378,6 +401,11 @@ export default function LotDetail() {
                     <p className="text-xs text-muted-foreground">
                       Заполните слот, даты и комментарий — все поля обязательны.
                     </p>
+                    <AcceptanceCheckboxes
+                      audience="client"
+                      checked={accepted}
+                      onChange={(slug, v) => setAccepted((p) => ({ ...p, [slug]: v }))}
+                    />
                     <Button type="submit" className="w-full" disabled={submit.isPending}>
                       {submit.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Отправить заявку

@@ -13,6 +13,12 @@ import { Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { accessModeLabels, scheduleModeLabels } from "@/lib/labels";
 import type { Tables, Enums } from "@/integrations/supabase/types";
+import {
+  AcceptanceCheckboxes,
+  HOST_EXTRA_RIGHTS,
+  defaultHostExtras,
+} from "@/components/legal/AcceptanceCheckboxes";
+import { logAcceptances } from "@/lib/logAcceptance";
 
 interface Props {
   open: boolean;
@@ -63,6 +69,7 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     schedule_mode: (object?.schedule_mode || "by_arrangement") as Enums<"schedule_mode">,
     schedule_notes: object?.schedule_notes || "",
   });
+  const [accepted, setAccepted] = useState<Record<string, boolean>>({});
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -70,6 +77,13 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     mutationFn: async () => {
       if (!user) throw new Error("Нужна авторизация");
       if (!form.title.trim() || !form.address.trim()) throw new Error("Заполните название и адрес");
+
+      // Для нового объекта проверяем акцепты хоста
+      if (!isEdit) {
+        const required = ["terms", "privacy", "host-rules", HOST_EXTRA_RIGHTS];
+        const missing = required.filter((s) => !accepted[s]);
+        if (missing.length) throw new Error("Подтвердите все обязательные согласия");
+      }
 
       const geo = await geocode(form.address);
 
@@ -103,9 +117,19 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
         return { id: data.id, created: true };
       }
     },
-    onSuccess: ({ id, created }) => {
+    onSuccess: async ({ id, created }) => {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
       queryClient.invalidateQueries({ queryKey: ["host", "object", id] });
+      if (created) {
+        await logAcceptances({
+          audience: "host",
+          acceptanceType: "host_publish",
+          relatedObjectId: id,
+          textsBySlug: {
+            [HOST_EXTRA_RIGHTS]: defaultHostExtras[0].text,
+          },
+        });
+      }
       toast({ title: isEdit ? "Объект обновлён" : "Объект создан" });
       onOpenChange(false);
       if (created) navigate(`/dashboard/host/objects/${id}`);
@@ -192,14 +216,22 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           </div>
 
           {!isEdit && (
-            <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
-              После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
-            </p>
+            <>
+              <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
+                После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
+              </p>
+              <AcceptanceCheckboxes
+                audience="host"
+                checked={accepted}
+                onChange={(slug, v) => setAccepted((p) => ({ ...p, [slug]: v }))}
+                extraItems={defaultHostExtras}
+              />
+            </>
           )}
 
           <Button type="submit" className="w-full" disabled={mutation.isPending}>
             {mutation.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-            {isEdit ? "Сохранить" : "Создать"}
+            {isEdit ? "Сохранить" : "Опубликовать"}
           </Button>
         </form>
       </DialogContent>

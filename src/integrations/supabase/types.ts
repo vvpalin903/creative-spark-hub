@@ -178,6 +178,62 @@ export type Database = {
           },
         ]
       }
+      document_acceptances: {
+        Row: {
+          acceptance_text_snapshot: string | null
+          acceptance_type: string
+          accepted_at: string
+          document_id: string
+          document_slug: string
+          document_version: number
+          id: string
+          ip_address: string | null
+          related_object_id: string | null
+          related_request_id: string | null
+          user_agent: string | null
+          user_id: string | null
+          user_type: string
+        }
+        Insert: {
+          acceptance_text_snapshot?: string | null
+          acceptance_type: string
+          accepted_at?: string
+          document_id: string
+          document_slug: string
+          document_version: number
+          id?: string
+          ip_address?: string | null
+          related_object_id?: string | null
+          related_request_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_type: string
+        }
+        Update: {
+          acceptance_text_snapshot?: string | null
+          acceptance_type?: string
+          accepted_at?: string
+          document_id?: string
+          document_slug?: string
+          document_version?: number
+          id?: string
+          ip_address?: string | null
+          related_object_id?: string | null
+          related_request_id?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+          user_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_acceptances_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "site_documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       host_objects: {
         Row: {
           access_mode: Database["public"]["Enums"]["access_mode_ext"]
@@ -496,8 +552,15 @@ export type Database = {
         Row: {
           content: string
           created_at: string
+          doc_type: string
           id: string
           is_active: boolean
+          published_at: string | null
+          requires_acceptance_client: boolean
+          requires_acceptance_host: boolean
+          requires_acceptance_other: boolean
+          short_title: string | null
+          show_in_footer: boolean
           slug: string
           title: string
           updated_at: string
@@ -506,8 +569,15 @@ export type Database = {
         Insert: {
           content: string
           created_at?: string
+          doc_type?: string
           id?: string
           is_active?: boolean
+          published_at?: string | null
+          requires_acceptance_client?: boolean
+          requires_acceptance_host?: boolean
+          requires_acceptance_other?: boolean
+          short_title?: string | null
+          show_in_footer?: boolean
           slug: string
           title: string
           updated_at?: string
@@ -516,8 +586,15 @@ export type Database = {
         Update: {
           content?: string
           created_at?: string
+          doc_type?: string
           id?: string
           is_active?: boolean
+          published_at?: string | null
+          requires_acceptance_client?: boolean
+          requires_acceptance_host?: boolean
+          requires_acceptance_other?: boolean
+          short_title?: string | null
+          show_in_footer?: boolean
           slug?: string
           title?: string
           updated_at?: string
