@@ -106,9 +106,13 @@ export default function Host() {
             ))}
           </div>
           <div className="text-center mt-8">
-            <Button asChild>
-              <Link to={cta.to}>{cta.label}</Link>
-            </Button>
+            {blockedAsClient ? (
+              <Button variant="outline" onClick={handleBlockedClick}>Стать хостом</Button>
+            ) : (
+              <Button asChild>
+                <Link to={cta.to}>{cta.label}</Link>
+              </Button>
+            )}
           </div>
         </div>
       </section>
