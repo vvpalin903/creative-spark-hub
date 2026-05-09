@@ -17,9 +17,11 @@ Deno.serve(async (req) => {
       { global: { headers: { Authorization: authHeader } } });
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    const { data: claims } = await supabase.auth.getClaims(authHeader.replace('Bearer ', ''));
-    if (!claims?.claims) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
-    const userId = claims.claims.sub;
+    const { data: userData, error: userErr } = await supabase.auth.getUser();
+    if (userErr || !userData?.user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+    const userId = userData.user.id;
 
     // Снимаем объекты с публикации
     await admin.from('host_objects').update({ object_status: 'archived' }).eq('host_user_id', userId);
