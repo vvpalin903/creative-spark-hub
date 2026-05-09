@@ -670,6 +670,7 @@ export type Database = {
           document_type: string
           file_url: string
           id: string
+          object_id: string | null
           reviewer_notes: string | null
           status: Database["public"]["Enums"]["verification_status"]
           updated_at: string
@@ -680,6 +681,7 @@ export type Database = {
           document_type: string
           file_url: string
           id?: string
+          object_id?: string | null
           reviewer_notes?: string | null
           status?: Database["public"]["Enums"]["verification_status"]
           updated_at?: string
@@ -690,6 +692,7 @@ export type Database = {
           document_type?: string
           file_url?: string
           id?: string
+          object_id?: string | null
           reviewer_notes?: string | null
           status?: Database["public"]["Enums"]["verification_status"]
           updated_at?: string
