@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Wallet, Users, Shield, Building2, ClipboardCheck, MessageSquare } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "@/hooks/use-toast";
 
 const hostFaq = [
   { q: "Какие требования к месту?", a: "Место должно быть сухим, безопасным и иметь возможность доступа для клиента. Подходят гаражи, кладовки, подвалы, балконы, складские помещения." },
@@ -20,13 +21,35 @@ const steps = [
 ];
 
 export default function Host() {
-  const { user, isHost } = useAuth();
+  const { user, isHost, isClient } = useAuth();
+  const blockedAsClient = !!user && isClient && !isHost;
 
   const cta = user
     ? isHost
       ? { to: "/dashboard/host", label: "В кабинет хоста" }
       : { to: "/auth?role=host", label: "Стать хостом" }
     : { to: "/auth?role=host", label: "Зарегистрироваться как хост" };
+
+  const handleBlockedClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    toast({
+      title: "Нужна отдельная учётная запись",
+      description:
+        "Для того чтобы сдавать место, необходимо зарегистрироваться как хост на отдельную учётную запись.",
+      variant: "destructive",
+    });
+  };
+
+  const renderCta = () =>
+    blockedAsClient ? (
+      <Button size="lg" variant="outline" onClick={handleBlockedClick}>
+        Стать хостом
+      </Button>
+    ) : (
+      <Button asChild size="lg">
+        <Link to={cta.to}>{cta.label}</Link>
+      </Button>
+    );
 
   return (
     <Layout>
@@ -58,9 +81,12 @@ export default function Host() {
             </div>
           </div>
 
-          <Button asChild size="lg">
-            <Link to={cta.to}>{cta.label}</Link>
-          </Button>
+          {renderCta()}
+          {blockedAsClient && (
+            <p className="text-xs text-muted-foreground mt-3 max-w-md mx-auto">
+              Вы вошли как клиент. Чтобы сдавать место, нужна отдельная учётная запись хоста.
+            </p>
+          )}
         </div>
       </section>
 
@@ -80,9 +106,13 @@ export default function Host() {
             ))}
           </div>
           <div className="text-center mt-8">
-            <Button asChild>
-              <Link to={cta.to}>{cta.label}</Link>
-            </Button>
+            {blockedAsClient ? (
+              <Button variant="outline" onClick={handleBlockedClick}>Стать хостом</Button>
+            ) : (
+              <Button asChild>
+                <Link to={cta.to}>{cta.label}</Link>
+              </Button>
+            )}
           </div>
         </div>
       </section>

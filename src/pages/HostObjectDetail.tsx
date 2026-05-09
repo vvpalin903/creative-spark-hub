@@ -11,6 +11,7 @@ import { useState } from "react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { PhotosManager } from "@/components/dashboard/PhotosManager";
 import { SlotsManager } from "@/components/dashboard/SlotsManager";
+import { OwnershipDocsManager } from "@/components/dashboard/OwnershipDocsManager";
 import {
   accessModeLabels,
   objectStatusColors,
@@ -182,6 +183,11 @@ export default function HostObjectDetail() {
             )}
           </CardContent>
         </Card>
+
+        <section>
+          <h3 className="text-lg font-semibold mb-3">Документы о праве собственности</h3>
+          <OwnershipDocsManager objectId={object.id} />
+        </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-3">Фотографии</h3>
