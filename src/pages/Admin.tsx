@@ -14,6 +14,7 @@ import { Loader2, LogOut, Pencil } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { DocumentsTab } from "@/components/admin/DocumentsTab";
 import { VerificationDocsTab } from "@/components/admin/VerificationDocsTab";
+import NotFound from "./NotFound";
 import {
   bookingRequestStatusLabels,
   objectStatusColors,
