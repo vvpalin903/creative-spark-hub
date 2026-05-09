@@ -272,17 +272,44 @@ function RequestsTab() {
                 </Select>
               </TableCell>
               <TableCell>
-                {(["new", "viewed"].includes(r.request_status) && r.start_date && r.slot_id) ? (
-                  <Button
-                    size="sm"
-                    onClick={() => confirmPlacement.mutate(r.id)}
-                    disabled={confirmPlacement.isPending}
-                  >
-                    Подтвердить размещение
-                  </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground">—</span>
-                )}
+                <div className="flex flex-col gap-1">
+                  {["new", "viewed"].includes(r.request_status) && (
+                    <>
+                      {r.start_date && r.slot_id ? (
+                        <Button
+                          size="sm"
+                          onClick={() => confirmPlacement.mutate(r.id)}
+                          disabled={confirmPlacement.isPending}
+                        >
+                          Подтвердить
+                        </Button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">Нужны дата и слот</span>
+                      )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => updateStatus.mutate({ id: r.id, status: "rejected" })}
+                        disabled={updateStatus.isPending}
+                      >
+                        Отклонить
+                      </Button>
+                    </>
+                  )}
+                  {r.request_status === "accepted" && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => updateStatus.mutate({ id: r.id, status: "completed" })}
+                      disabled={updateStatus.isPending}
+                    >
+                      Завершить
+                    </Button>
+                  )}
+                  {!["new", "viewed", "accepted"].includes(r.request_status) && (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </div>
               </TableCell>
               <TableCell>
                 <RequestChatLink requestId={r.id} role="host" />
