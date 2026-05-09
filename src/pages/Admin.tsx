@@ -104,35 +104,7 @@ export default function Admin() {
   }
 
   if (!session || !isAdmin) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <Card className="w-full max-w-sm">
-          <CardHeader>
-            <CardTitle>Вход в админку</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {session && !isAdmin ? (
-              <p className="text-sm text-destructive">У вас нет прав администратора</p>
-            ) : (
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                </div>
-                <div>
-                  <Label htmlFor="password">Пароль</Label>
-                  <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-                </div>
-                <Button type="submit" className="w-full" disabled={authLoading}>
-                  {authLoading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Войти
-                </Button>
-              </form>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <NotFound />;
   }
 
   return <AdminDashboard isRealAdmin={isRealAdmin} />;
