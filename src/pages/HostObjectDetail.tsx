@@ -185,6 +185,11 @@ export default function HostObjectDetail() {
         </Card>
 
         <section>
+          <h3 className="text-lg font-semibold mb-3">Документы о праве собственности</h3>
+          <OwnershipDocsManager objectId={object.id} />
+        </section>
+
+        <section>
           <h3 className="text-lg font-semibold mb-3">Фотографии</h3>
           <PhotosManager objectId={object.id} photos={object.photos || []} />
         </section>
