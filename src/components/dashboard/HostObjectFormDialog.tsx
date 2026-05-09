@@ -130,7 +130,12 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           },
         });
       }
-      toast({ title: isEdit ? "Объект обновлён" : "Объект создан" });
+      toast({
+        title: isEdit ? "Объект обновлён" : "Объект создан",
+        description: created
+          ? "Загрузите документ о праве собственности на объект — без него публикация невозможна."
+          : undefined,
+      });
       onOpenChange(false);
       if (created) navigate(`/dashboard/host/objects/${id}`);
     },
