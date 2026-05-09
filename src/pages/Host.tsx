@@ -81,9 +81,12 @@ export default function Host() {
             </div>
           </div>
 
-          <Button asChild size="lg">
-            <Link to={cta.to}>{cta.label}</Link>
-          </Button>
+          {renderCta()}
+          {blockedAsClient && (
+            <p className="text-xs text-muted-foreground mt-3 max-w-md mx-auto">
+              Вы вошли как клиент. Чтобы сдавать место, нужна отдельная учётная запись хоста.
+            </p>
+          )}
         </div>
       </section>
 
