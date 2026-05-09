@@ -11,6 +11,7 @@ import { useState } from "react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { PhotosManager } from "@/components/dashboard/PhotosManager";
 import { SlotsManager } from "@/components/dashboard/SlotsManager";
+import { OwnershipDocsManager } from "@/components/dashboard/OwnershipDocsManager";
 import {
   accessModeLabels,
   objectStatusColors,
