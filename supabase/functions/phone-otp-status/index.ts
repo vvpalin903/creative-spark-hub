@@ -60,7 +60,25 @@ Deno.serve(async (req) => {
       headers: { Authorization: `Bearer ${jwt}` },
     });
     const statusJson = await statusRes.json().catch(() => ({}));
-    return new Response(JSON.stringify({ local: verification, notificore: statusJson }), {
+    const data = statusJson?.data ?? statusJson;
+    const messages = Array.isArray(data?.messages) ? data.messages : [];
+    const messageStatuses = messages
+      .map((message) => String((message?.data ?? message)?.status ?? ""))
+      .filter(Boolean);
+    const deliveryStatus = messageStatuses.includes("delivered")
+      ? "delivered"
+      : messageStatuses.includes("undelivered")
+        ? "undelivered"
+        : messageStatuses.includes("accepted")
+          ? "accepted"
+          : "pending";
+
+    return new Response(JSON.stringify({
+      ok: statusRes.ok,
+      auth_status: data?.status ?? verification.status,
+      delivery_status: deliveryStatus,
+      expires_at: data?.expired_at ?? verification.expires_at,
+    }), {
       status: statusRes.ok ? 200 : 502,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
