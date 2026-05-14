@@ -9,7 +9,6 @@ const corsHeaders = {
 const NOTIFICORE_BASE = "https://one-api.notificore.ru";
 const NOTIFICORE_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/otp`;
 const NOTIFICORE_TEMPLATES_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/templates`;
-const NOTIFICORE_SMS_URL = "https://api.notificore.ru/rest/sms/create/";
 
 let cachedJwt: { token: string; exp: number } | null = null;
 
@@ -74,42 +73,6 @@ async function resolveTemplateId(jwt: string, configuredTemplateId: string, phon
   }
 
   return null;
-}
-
-async function sha256(value: string): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function sendLegacySmsOtp(apiKey: string, sender: string, phone: string, userId: string, serviceKey: string) {
-  const reference = `phone-otp-${userId}-${Date.now()}`;
-  const res = await fetch(NOTIFICORE_SMS_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": apiKey,
-    },
-    body: JSON.stringify({
-      originator: sender,
-      destination: "otp",
-      body: "Код Место рядом: {gen_otp_09,5}",
-      msisdn: phone,
-      reference,
-    }),
-  });
-  const json = await res.json().catch(() => ({}));
-  const result = json?.result ?? json;
-  const code = String(result?.otp_code ?? "");
-  if (!res.ok || result?.error || !/^\d{3,9}$/.test(code)) {
-    console.error("Notificore legacy SMS OTP error", res.status, json);
-    throw new Error(`Notificore SMS OTP failed: ${res.status} ${JSON.stringify(json)}`);
-  }
-
-  const hash = await sha256(`${userId}:${phone}:${code}:${serviceKey}`);
-  return {
-    id: `smsotp:${result?.id ?? reference}:${hash}`,
-    expired_at: new Date(Date.now() + 5 * 60_000).toISOString(),
-  };
 }
 
 function normalizePhone(raw: string): string | null {
