@@ -93,17 +93,19 @@ Deno.serve(async (req) => {
       code_digits: 5,
     };
 
+    const jwt = await getNotificoreJwt(apiKey);
     const ncRes = await fetch(NOTIFICORE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${jwt}`,
       },
       body: JSON.stringify(payload),
     });
 
     const ncJson = await ncRes.json().catch(() => ({}));
-    if (!ncRes.ok || !ncJson?.id) {
+    const ncData = ncJson?.data ?? ncJson;
+    if (!ncRes.ok || !ncData?.id) {
       console.error("Notificore send error", ncRes.status, ncJson);
       return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -111,9 +113,9 @@ Deno.serve(async (req) => {
     await admin.from("phone_verifications").insert({
       user_id: userId,
       phone,
-      auth_id: ncJson.id,
+      auth_id: ncData.id,
       status: "pending",
-      expires_at: ncJson.expired_at ?? null,
+      expires_at: ncData.expired_at ?? null,
     });
 
     // Update phone on profile (unverified yet)
