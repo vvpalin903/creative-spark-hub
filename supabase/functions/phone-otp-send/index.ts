@@ -6,7 +6,26 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const NOTIFICORE_URL = "https://one-api.notificore.ru/api/2fa/authentications/otp";
+const NOTIFICORE_BASE = "https://one-api.notificore.ru";
+const NOTIFICORE_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/otp`;
+
+let cachedJwt: { token: string; exp: number } | null = null;
+
+async function getNotificoreJwt(apiKey: string): Promise<string> {
+  if (cachedJwt && cachedJwt.exp > Date.now() + 60_000) return cachedJwt.token;
+  const res = await fetch(`${NOTIFICORE_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.token) {
+    throw new Error(`Notificore auth failed: ${res.status} ${JSON.stringify(json)}`);
+  }
+  // Tokens typically last ~1h; cache for 50 minutes
+  cachedJwt = { token: json.token, exp: Date.now() + 50 * 60_000 };
+  return json.token;
+}
 
 function normalizePhone(raw: string): string | null {
   const digits = (raw || "").replace(/\D/g, "");
@@ -74,17 +93,19 @@ Deno.serve(async (req) => {
       code_digits: 5,
     };
 
+    const jwt = await getNotificoreJwt(apiKey);
     const ncRes = await fetch(NOTIFICORE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${jwt}`,
       },
       body: JSON.stringify(payload),
     });
 
     const ncJson = await ncRes.json().catch(() => ({}));
-    if (!ncRes.ok || !ncJson?.id) {
+    const ncData = ncJson?.data ?? ncJson;
+    if (!ncRes.ok || !ncData?.id) {
       console.error("Notificore send error", ncRes.status, ncJson);
       return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
@@ -92,15 +113,15 @@ Deno.serve(async (req) => {
     await admin.from("phone_verifications").insert({
       user_id: userId,
       phone,
-      auth_id: ncJson.id,
+      auth_id: ncData.id,
       status: "pending",
-      expires_at: ncJson.expired_at ?? null,
+      expires_at: ncData.expired_at ?? null,
     });
 
     // Update phone on profile (unverified yet)
     await admin.from("profiles").update({ phone }).eq("user_id", userId);
 
-    return new Response(JSON.stringify({ ok: true, phone, expires_at: ncJson.expired_at }), {
+    return new Response(JSON.stringify({ ok: true, phone, expires_at: ncData.expired_at }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
