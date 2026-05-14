@@ -121,7 +121,7 @@ Deno.serve(async (req) => {
     // Update phone on profile (unverified yet)
     await admin.from("profiles").update({ phone }).eq("user_id", userId);
 
-    return new Response(JSON.stringify({ ok: true, phone, expires_at: ncJson.expired_at }), {
+    return new Response(JSON.stringify({ ok: true, phone, expires_at: ncData.expired_at }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
