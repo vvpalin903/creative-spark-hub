@@ -171,30 +171,36 @@ Deno.serve(async (req) => {
     const jwt = await getNotificoreJwt(apiKey);
     const resolvedTemplateId = await resolveTemplateId(jwt, templateId, phone);
 
-    const payload = {
-      recipient: phone,
-      channel: "sms",
-      sender,
-      template_id: resolvedTemplateId,
-      code_lifetime: 300,
-      code_max_tries: 3,
-      code_digits: 5,
-    };
+    let ncData: { id: string; expired_at?: string | null };
+    if (resolvedTemplateId) {
+      const payload = {
+        recipient: phone,
+        channel: "sms",
+        sender,
+        template_id: resolvedTemplateId,
+        code_lifetime: 300,
+        code_max_tries: 3,
+        code_digits: 5,
+      };
 
-    const ncRes = await fetch(NOTIFICORE_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${jwt}`,
-      },
-      body: JSON.stringify(payload),
-    });
+      const ncRes = await fetch(NOTIFICORE_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${jwt}`,
+        },
+        body: JSON.stringify(payload),
+      });
 
-    const ncJson = await ncRes.json().catch(() => ({}));
-    const ncData = ncJson?.data ?? ncJson;
-    if (!ncRes.ok || !ncData?.id) {
-      console.error("Notificore send error", ncRes.status, ncJson);
-      return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      const ncJson = await ncRes.json().catch(() => ({}));
+      ncData = ncJson?.data ?? ncJson;
+      if (!ncRes.ok || !ncData?.id) {
+        console.error("Notificore send error", ncRes.status, ncJson);
+        return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      }
+    } else {
+      console.warn("No approved Notificore 2FA template found; falling back to SMS OTP API", { configuredTemplateId: templateId });
+      ncData = await sendLegacySmsOtp(apiKey, sender, phone, userId, serviceKey);
     }
 
     await admin.from("phone_verifications").insert({
