@@ -72,17 +72,19 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Активная сессия подтверждения не найдена. Запросите код заново." }), { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    const jwt = await getNotificoreJwt(apiKey);
     const ncRes = await fetch(`${NOTIFICORE_URL}/${pv.auth_id}/verify`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
+        "Authorization": `Bearer ${jwt}`,
       },
       body: JSON.stringify({ access_code: Number(rawCode) }),
     });
 
     const ncJson = await ncRes.json().catch(() => ({}));
-    const verified = ncRes.ok && (ncJson?.status === "verified" || ncJson?.status === "completed" || ncJson?.verified === true);
+    const ncData = ncJson?.data ?? ncJson;
+    const verified = ncRes.ok && (ncData?.status === "verified" || ncData?.status === "completed" || ncData?.verified === true);
 
     await admin
       .from("phone_verifications")
