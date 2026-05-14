@@ -9,7 +9,7 @@ interface Props {
 }
 
 export function ProtectedRoute({ children, requireRole }: Props) {
-  const { session, loading, roles } = useAuth();
+  const { session, loading, roles, phoneVerified } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -22,6 +22,11 @@ export function ProtectedRoute({ children, requireRole }: Props) {
 
   if (!session) {
     return <Navigate to={`/auth?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
+  }
+
+  // Phone verification gate (admins exempt)
+  if (!phoneVerified && !roles.includes("admin")) {
+    return <Navigate to={`/verify-phone?next=${encodeURIComponent(location.pathname + location.search)}`} replace />;
   }
 
   if (requireRole && !roles.includes(requireRole) && !roles.includes("admin")) {
