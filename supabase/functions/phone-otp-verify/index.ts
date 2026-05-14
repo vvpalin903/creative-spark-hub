@@ -6,7 +6,25 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-const NOTIFICORE_URL = "https://one-api.notificore.ru/api/2fa/authentications/otp";
+const NOTIFICORE_BASE = "https://one-api.notificore.ru";
+const NOTIFICORE_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/otp`;
+
+let cachedJwt: { token: string; exp: number } | null = null;
+
+async function getNotificoreJwt(apiKey: string): Promise<string> {
+  if (cachedJwt && cachedJwt.exp > Date.now() + 60_000) return cachedJwt.token;
+  const res = await fetch(`${NOTIFICORE_BASE}/api/auth/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ api_key: apiKey }),
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok || !json?.token) {
+    throw new Error(`Notificore auth failed: ${res.status} ${JSON.stringify(json)}`);
+  }
+  cachedJwt = { token: json.token, exp: Date.now() + 50 * 60_000 };
+  return json.token;
+}
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
