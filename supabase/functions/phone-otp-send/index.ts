@@ -19,11 +19,11 @@ async function getNotificoreJwt(apiKey: string): Promise<string> {
     body: JSON.stringify({ api_key: apiKey }),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.token) {
+  if (!res.ok || !json?.bearer ?? json?.token) {
     throw new Error(`Notificore auth failed: ${res.status} ${JSON.stringify(json)}`);
   }
   // Tokens typically last ~1h; cache for 50 minutes
-  cachedJwt = { token: json.token, exp: Date.now() + 50 * 60_000 };
+  cachedJwt = { token: json.bearer ?? json.token, exp: Date.now() + 50 * 60_000 };
   return json.token;
 }
 
