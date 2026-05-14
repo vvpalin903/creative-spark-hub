@@ -386,6 +386,45 @@ export type Database = {
         }
         Relationships: []
       }
+      phone_verifications: {
+        Row: {
+          attempts: number
+          auth_id: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          phone: string
+          status: string
+          updated_at: string
+          user_id: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          auth_id: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          phone: string
+          status?: string
+          updated_at?: string
+          user_id: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          auth_id?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          phone?: string
+          status?: string
+          updated_at?: string
+          user_id?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       placements: {
         Row: {
           booking_request_id: string

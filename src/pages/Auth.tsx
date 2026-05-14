@@ -89,8 +89,8 @@ export default function Auth() {
       toast({ title: "Не удалось создать аккаунт", description: error.message, variant: "destructive" });
       return;
     }
-    toast({ title: "Аккаунт создан", description: "Добро пожаловать!" });
-    navigate(parsed.data.role === "host" ? "/dashboard/host" : "/dashboard/client", { replace: true });
+    toast({ title: "Аккаунт создан", description: "Подтвердите номер телефона по SMS" });
+    navigate(`/verify-phone?next=${encodeURIComponent(parsed.data.role === "host" ? "/dashboard/host" : "/dashboard/client")}`, { replace: true });
   };
 
   return (
