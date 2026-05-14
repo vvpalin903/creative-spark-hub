@@ -169,21 +169,22 @@ Deno.serve(async (req) => {
     }
 
     const jwt = await getNotificoreJwt(apiKey);
-    const resolvedTemplateId = await resolveTemplateId(jwt, templateId, phone);
+    const configuredTemplateId = Number(templateId);
+    if (!Number.isInteger(configuredTemplateId) || configuredTemplateId <= 0) {
+      return new Response(JSON.stringify({ error: "Некорректный NOTIFICORE_TEMPLATE_ID" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    let ncData: { id: string; expired_at?: string | null };
-    if (resolvedTemplateId) {
+    const send2faOtp = async (templateToUse: number) => {
       const payload = {
         recipient: phone,
         channel: "sms",
         sender,
-        template_id: resolvedTemplateId,
+        template_id: templateToUse,
         code_lifetime: 300,
         code_max_tries: 3,
         code_digits: 5,
       };
-
-      const ncRes = await fetch(NOTIFICORE_URL, {
+      return await fetch(NOTIFICORE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -191,16 +192,24 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify(payload),
       });
+    };
 
-      const ncJson = await ncRes.json().catch(() => ({}));
-      ncData = ncJson?.data ?? ncJson;
-      if (!ncRes.ok || !ncData?.id) {
-        console.error("Notificore send error", ncRes.status, ncJson);
-        return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let ncRes = await send2faOtp(configuredTemplateId);
+    let ncJson = await ncRes.json().catch(() => ({}));
+    let ncData = ncJson?.data ?? ncJson;
+
+    if (!ncRes.ok || !ncData?.id) {
+      console.error("Notificore send error", ncRes.status, ncJson);
+      const fallbackTemplateId = await resolveTemplateId(jwt, templateId, phone);
+      if (fallbackTemplateId && fallbackTemplateId !== configuredTemplateId) {
+        ncRes = await send2faOtp(fallbackTemplateId);
+        ncJson = await ncRes.json().catch(() => ({}));
+        ncData = ncJson?.data ?? ncJson;
       }
-    } else {
-      console.warn("No approved Notificore 2FA template found; falling back to SMS OTP API", { configuredTemplateId: templateId });
-      ncData = await sendLegacySmsOtp(apiKey, sender, phone, userId, serviceKey);
+    }
+
+    if (!ncRes.ok || !ncData?.id) {
+      return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     await admin.from("phone_verifications").insert({
