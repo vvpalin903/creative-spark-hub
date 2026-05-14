@@ -15,8 +15,10 @@ interface AuthContextValue {
   isAdmin: boolean;
   isBackOffice: boolean;
   isStaff: boolean;
+  phoneVerified: boolean;
   signOut: () => Promise<void>;
   refreshRoles: () => Promise<void>;
+  refreshPhoneVerified: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
