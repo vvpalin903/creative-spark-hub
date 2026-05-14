@@ -123,15 +123,6 @@ Deno.serve(async (req) => {
 
     if (!ncRes.ok || !ncData?.id) {
       console.error("Notificore send error", ncRes.status, ncJson);
-      const fallbackTemplateId = await resolveTemplateId(jwt, templateId, phone);
-      if (fallbackTemplateId && fallbackTemplateId !== configuredTemplateId) {
-        ncRes = await send2faOtp(fallbackTemplateId);
-        ncJson = await ncRes.json().catch(() => ({}));
-        ncData = ncJson?.data ?? ncJson;
-      }
-    }
-
-    if (!ncRes.ok || !ncData?.id) {
       return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
