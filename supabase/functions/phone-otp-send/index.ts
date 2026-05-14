@@ -39,7 +39,6 @@ type NotificoreTemplate = {
 async function resolveTemplateId(jwt: string, configuredTemplateId: string, phone: string): Promise<number | null> {
   const country = phone.startsWith("7") ? "RU" : undefined;
   const params = new URLSearchParams({
-    "filter[status]": "approved",
     "page[limit]": "100",
     sort: "updated_at",
     way: "desc",
@@ -54,15 +53,16 @@ async function resolveTemplateId(jwt: string, configuredTemplateId: string, phon
   }
 
   const templates: NotificoreTemplate[] = Array.isArray(json?.data) ? json.data : [];
+  const approvedTemplates = templates.filter((template) => String(template.status ?? "").toLowerCase() === "approved");
   const configured = Number(configuredTemplateId);
-  const approvedConfigured = templates.find((template) => Number(template.template_id) === configured);
+  const approvedConfigured = approvedTemplates.find((template) => Number(template.template_id) === configured);
   if (Number.isInteger(configured) && configured > 0 && approvedConfigured) return configured;
 
-  const fallback = templates.find((template) => {
+  const fallback = approvedTemplates.find((template) => {
     if (!country) return true;
     const countries = Array.isArray(template.countries) ? template.countries.map((item) => String(item).toUpperCase()) : [];
     return countries.length === 0 || countries.includes(country);
-  }) ?? templates[0];
+  }) ?? approvedTemplates[0];
 
   const fallbackId = Number(fallback?.template_id);
   if (Number.isInteger(fallbackId) && fallbackId > 0) {
