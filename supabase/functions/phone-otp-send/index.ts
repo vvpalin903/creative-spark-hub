@@ -85,9 +85,9 @@ Deno.serve(async (req) => {
 
     const payload = {
       recipient: phone,
-      channel: "SMS",
+      channel: "sms",
       sender,
-      template_id: templateId,
+      template_id: Number(templateId),
       code_lifetime: 300,
       code_max_tries: 3,
       code_digits: 5,
