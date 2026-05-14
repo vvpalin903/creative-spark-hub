@@ -26,11 +26,6 @@ async function getNotificoreJwt(apiKey: string): Promise<string> {
   return cachedJwt!.token;
 }
 
-async function sha256(value: string): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -80,35 +75,6 @@ Deno.serve(async (req) => {
     if (pv.expires_at && new Date(pv.expires_at).getTime() < Date.now()) {
       await admin.from("phone_verifications").update({ status: "failed" }).eq("id", pv.id);
       return new Response(JSON.stringify({ error: "Код истёк. Запросите новый." }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-    }
-
-    if (String(pv.auth_id).startsWith("smsotp:")) {
-      const expectedHash = String(pv.auth_id).split(":").at(-1);
-      const actualHash = await sha256(`${userId}:${pv.phone}:${rawCode}:${serviceKey}`);
-      const verified = expectedHash === actualHash;
-
-      await admin
-        .from("phone_verifications")
-        .update({
-          attempts: (pv.attempts ?? 0) + 1,
-          status: verified ? "verified" : pv.attempts >= 2 ? "failed" : "pending",
-          verified_at: verified ? new Date().toISOString() : null,
-        })
-        .eq("id", pv.id);
-
-      if (!verified) {
-        return new Response(JSON.stringify({ error: "Неверный или просроченный код" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
-      }
-
-      await admin.from("profiles").update({ phone_verified: true, phone: pv.phone }).eq("user_id", userId);
-      await admin.from("verification_logs").insert({
-        user_id: userId,
-        verification_type: "phone",
-        verification_status: "verified",
-        comment: "Notificore SMS OTP verified",
-      });
-
-      return new Response(JSON.stringify({ ok: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const jwt = await getNotificoreJwt(apiKey);

@@ -9,7 +9,6 @@ const corsHeaders = {
 const NOTIFICORE_BASE = "https://one-api.notificore.ru";
 const NOTIFICORE_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/otp`;
 const NOTIFICORE_TEMPLATES_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/templates`;
-const NOTIFICORE_SMS_URL = "https://api.notificore.ru/rest/sms/create/";
 
 let cachedJwt: { token: string; exp: number } | null = null;
 
@@ -39,7 +38,6 @@ type NotificoreTemplate = {
 async function resolveTemplateId(jwt: string, configuredTemplateId: string, phone: string): Promise<number | null> {
   const country = phone.startsWith("7") ? "RU" : undefined;
   const params = new URLSearchParams({
-    "filter[status]": "approved",
     "page[limit]": "100",
     sort: "updated_at",
     way: "desc",
@@ -54,15 +52,16 @@ async function resolveTemplateId(jwt: string, configuredTemplateId: string, phon
   }
 
   const templates: NotificoreTemplate[] = Array.isArray(json?.data) ? json.data : [];
+  const approvedTemplates = templates.filter((template) => String(template.status ?? "").toLowerCase() === "approved");
   const configured = Number(configuredTemplateId);
-  const approvedConfigured = templates.find((template) => Number(template.template_id) === configured);
+  const approvedConfigured = approvedTemplates.find((template) => Number(template.template_id) === configured);
   if (Number.isInteger(configured) && configured > 0 && approvedConfigured) return configured;
 
-  const fallback = templates.find((template) => {
+  const fallback = approvedTemplates.find((template) => {
     if (!country) return true;
     const countries = Array.isArray(template.countries) ? template.countries.map((item) => String(item).toUpperCase()) : [];
     return countries.length === 0 || countries.includes(country);
-  }) ?? templates[0];
+  }) ?? approvedTemplates[0];
 
   const fallbackId = Number(fallback?.template_id);
   if (Number.isInteger(fallbackId) && fallbackId > 0) {
@@ -74,42 +73,6 @@ async function resolveTemplateId(jwt: string, configuredTemplateId: string, phon
   }
 
   return null;
-}
-
-async function sha256(value: string): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
-  return Array.from(new Uint8Array(hash)).map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function sendLegacySmsOtp(apiKey: string, sender: string, phone: string, userId: string, serviceKey: string) {
-  const reference = `phone-otp-${userId}-${Date.now()}`;
-  const res = await fetch(NOTIFICORE_SMS_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-API-KEY": apiKey,
-    },
-    body: JSON.stringify({
-      originator: sender,
-      destination: "otp",
-      body: "Код Место рядом: {gen_otp_09,5}",
-      msisdn: phone,
-      reference,
-    }),
-  });
-  const json = await res.json().catch(() => ({}));
-  const result = json?.result ?? json;
-  const code = String(result?.otp_code ?? "");
-  if (!res.ok || result?.error || !/^\d{3,9}$/.test(code)) {
-    console.error("Notificore legacy SMS OTP error", res.status, json);
-    throw new Error(`Notificore SMS OTP failed: ${res.status} ${JSON.stringify(json)}`);
-  }
-
-  const hash = await sha256(`${userId}:${phone}:${code}:${serviceKey}`);
-  return {
-    id: `smsotp:${result?.id ?? reference}:${hash}`,
-    expired_at: new Date(Date.now() + 5 * 60_000).toISOString(),
-  };
 }
 
 function normalizePhone(raw: string): string | null {
@@ -169,21 +132,22 @@ Deno.serve(async (req) => {
     }
 
     const jwt = await getNotificoreJwt(apiKey);
-    const resolvedTemplateId = await resolveTemplateId(jwt, templateId, phone);
+    const configuredTemplateId = Number(templateId);
+    if (!Number.isInteger(configuredTemplateId) || configuredTemplateId <= 0) {
+      return new Response(JSON.stringify({ error: "Некорректный NOTIFICORE_TEMPLATE_ID" }), { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
-    let ncData: { id: string; expired_at?: string | null };
-    if (resolvedTemplateId) {
+    const send2faOtp = async (templateToUse: number) => {
       const payload = {
         recipient: phone,
         channel: "sms",
         sender,
-        template_id: resolvedTemplateId,
+        template_id: templateToUse,
         code_lifetime: 300,
         code_max_tries: 3,
         code_digits: 5,
       };
-
-      const ncRes = await fetch(NOTIFICORE_URL, {
+      return await fetch(NOTIFICORE_URL, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -191,16 +155,24 @@ Deno.serve(async (req) => {
         },
         body: JSON.stringify(payload),
       });
+    };
 
-      const ncJson = await ncRes.json().catch(() => ({}));
-      ncData = ncJson?.data ?? ncJson;
-      if (!ncRes.ok || !ncData?.id) {
-        console.error("Notificore send error", ncRes.status, ncJson);
-        return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    let ncRes = await send2faOtp(configuredTemplateId);
+    let ncJson = await ncRes.json().catch(() => ({}));
+    let ncData = ncJson?.data ?? ncJson;
+
+    if (!ncRes.ok || !ncData?.id) {
+      console.error("Notificore send error", ncRes.status, ncJson);
+      const fallbackTemplateId = await resolveTemplateId(jwt, templateId, phone);
+      if (fallbackTemplateId && fallbackTemplateId !== configuredTemplateId) {
+        ncRes = await send2faOtp(fallbackTemplateId);
+        ncJson = await ncRes.json().catch(() => ({}));
+        ncData = ncJson?.data ?? ncJson;
       }
-    } else {
-      console.warn("No approved Notificore 2FA template found; falling back to SMS OTP API", { configuredTemplateId: templateId });
-      ncData = await sendLegacySmsOtp(apiKey, sender, phone, userId, serviceKey);
+    }
+
+    if (!ncRes.ok || !ncData?.id) {
+      return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     await admin.from("phone_verifications").insert({
