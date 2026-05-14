@@ -75,6 +75,14 @@ async function resolveTemplateId(jwt: string, configuredTemplateId: string, phon
   return null;
 }
 
+async function getOtpStatus(jwt: string, authId: string) {
+  const res = await fetch(`${NOTIFICORE_BASE}/api/2fa/authentications/${authId}`, {
+    headers: { Authorization: `Bearer ${jwt}` },
+  });
+  const json = await res.json().catch(() => ({}));
+  return { ok: res.ok, json, data: json?.data ?? json };
+}
+
 function normalizePhone(raw: string): string | null {
   const digits = (raw || "").replace(/\D/g, "");
   if (digits.length < 9 || digits.length > 15) return null;
@@ -173,6 +181,14 @@ Deno.serve(async (req) => {
 
     if (!ncRes.ok || !ncData?.id) {
       return new Response(JSON.stringify({ error: "Не удалось отправить код", details: ncJson }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+    const otpStatus = await getOtpStatus(jwt, ncData.id);
+    const messages = Array.isArray(otpStatus.data?.messages) ? otpStatus.data.messages : [];
+    const hasUndeliveredSms = messages.some((message) => String((message?.data ?? message)?.status ?? "").toLowerCase() === "undelivered");
+    if (hasUndeliveredSms) {
+      console.error("Notificore SMS undelivered", otpStatus.json);
+      return new Response(JSON.stringify({ error: "SMS не доставлена оператором. Проверьте номер или попробуйте другой телефон.", details: otpStatus.json }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     await admin.from("phone_verifications").insert({
