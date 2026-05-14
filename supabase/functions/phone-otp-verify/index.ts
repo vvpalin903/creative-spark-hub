@@ -19,11 +19,11 @@ async function getNotificoreJwt(apiKey: string): Promise<string> {
     body: JSON.stringify({ api_key: apiKey }),
   });
   const json = await res.json().catch(() => ({}));
-  if (!res.ok || !json?.bearer ?? json?.token) {
+  if (!res.ok || !(json?.bearer ?? json?.token)) {
     throw new Error(`Notificore auth failed: ${res.status} ${JSON.stringify(json)}`);
   }
   cachedJwt = { token: json.bearer ?? json.token, exp: Date.now() + 50 * 60_000 };
-  return json.token;
+  return cachedJwt!.token;
 }
 
 Deno.serve(async (req) => {
