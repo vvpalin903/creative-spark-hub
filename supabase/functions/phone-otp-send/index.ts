@@ -8,7 +8,6 @@ const corsHeaders = {
 
 const NOTIFICORE_BASE = "https://one-api.notificore.ru";
 const NOTIFICORE_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/otp`;
-const NOTIFICORE_TEMPLATES_URL = `${NOTIFICORE_BASE}/api/2fa/authentications/templates`;
 
 let cachedJwt: { token: string; exp: number } | null = null;
 
@@ -26,53 +25,6 @@ async function getNotificoreJwt(apiKey: string): Promise<string> {
   // Tokens typically last ~1h; cache for 50 minutes
   cachedJwt = { token: json.bearer ?? json.token, exp: Date.now() + 50 * 60_000 };
   return cachedJwt!.token;
-}
-
-type NotificoreTemplate = {
-  template_id?: string | number;
-  countries?: string[];
-  status?: string;
-  updated_at?: string;
-};
-
-async function resolveTemplateId(jwt: string, configuredTemplateId: string, phone: string): Promise<number | null> {
-  const country = phone.startsWith("7") ? "RU" : undefined;
-  const params = new URLSearchParams({
-    "page[limit]": "100",
-    sort: "updated_at",
-    way: "desc",
-  });
-
-  const res = await fetch(`${NOTIFICORE_TEMPLATES_URL}?${params.toString()}`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
-  const json = await res.json().catch(() => ({}));
-  if (!res.ok) {
-    throw new Error(`Notificore template lookup failed: ${res.status} ${JSON.stringify(json)}`);
-  }
-
-  const templates: NotificoreTemplate[] = Array.isArray(json?.data) ? json.data : [];
-  const approvedTemplates = templates.filter((template) => String(template.status ?? "").toLowerCase() === "approved");
-  const configured = Number(configuredTemplateId);
-  const approvedConfigured = approvedTemplates.find((template) => Number(template.template_id) === configured);
-  if (Number.isInteger(configured) && configured > 0 && approvedConfigured) return configured;
-
-  const fallback = approvedTemplates.find((template) => {
-    if (!country) return true;
-    const countries = Array.isArray(template.countries) ? template.countries.map((item) => String(item).toUpperCase()) : [];
-    return countries.length === 0 || countries.includes(country);
-  }) ?? approvedTemplates[0];
-
-  const fallbackId = Number(fallback?.template_id);
-  if (Number.isInteger(fallbackId) && fallbackId > 0) {
-    console.warn("Configured Notificore template is not approved; using approved fallback template", {
-      configuredTemplateId,
-      fallbackTemplateId: fallbackId,
-    });
-    return fallbackId;
-  }
-
-  return null;
 }
 
 async function getOtpStatus(jwt: string, authId: string) {
