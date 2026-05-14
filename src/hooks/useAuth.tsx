@@ -27,6 +27,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [roles, setRoles] = useState<AppRole[]>([]);
+  const [phoneVerified, setPhoneVerified] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadRoles = async (uid: string) => {
@@ -34,25 +35,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setRoles((data || []).map((r) => r.role as AppRole));
   };
 
+  const loadPhoneVerified = async (uid: string) => {
+    const { data } = await supabase.from("profiles").select("phone_verified").eq("user_id", uid).maybeSingle();
+    setPhoneVerified(!!data?.phone_verified);
+  };
+
   useEffect(() => {
-    // 1. Set listener BEFORE getSession (per Supabase guidance)
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, s) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        // defer to avoid recursion
-        setTimeout(() => loadRoles(s.user.id), 0);
+        setTimeout(() => {
+          loadRoles(s.user.id);
+          loadPhoneVerified(s.user.id);
+        }, 0);
       } else {
         setRoles([]);
+        setPhoneVerified(false);
       }
     });
 
-    // 2. Get current session
     supabase.auth.getSession().then(({ data: { session: s } }) => {
       setSession(s);
       setUser(s?.user ?? null);
       if (s?.user) {
-        loadRoles(s.user.id).finally(() => setLoading(false));
+        Promise.all([loadRoles(s.user.id), loadPhoneVerified(s.user.id)]).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -64,10 +71,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setRoles([]);
+    setPhoneVerified(false);
   };
 
   const refreshRoles = async () => {
     if (user) await loadRoles(user.id);
+  };
+
+  const refreshPhoneVerified = async () => {
+    if (user) await loadPhoneVerified(user.id);
   };
 
   return (
@@ -82,8 +94,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAdmin: roles.includes("admin"),
         isBackOffice: roles.includes("back_office" as AppRole),
         isStaff: roles.includes("admin") || roles.includes("back_office" as AppRole),
+        phoneVerified,
         signOut,
         refreshRoles,
+        refreshPhoneVerified,
       }}
     >
       {children}
