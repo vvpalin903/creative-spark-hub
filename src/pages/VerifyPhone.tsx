@@ -60,6 +60,16 @@ export default function VerifyPhone() {
     toast({ title: "Код отправлен", description: "Проверьте SMS" });
     setStep("code");
     setCooldown(60);
+    setTimeout(async () => {
+      const { data: status } = await supabase.functions.invoke("phone-otp-status", { body: { phone } });
+      if ((status as any)?.delivery_status === "undelivered") {
+        toast({
+          title: "SMS не доставлена",
+          description: "Оператор отклонил сообщение. Проверьте номер или попробуйте другой телефон.",
+          variant: "destructive",
+        });
+      }
+    }, 45000);
   };
 
   const verifyCode = async () => {
