@@ -48,6 +48,7 @@ export default function Auth() {
   const [verifyStep, setVerifyStep] = useState<null | "calling">(null);
   const [verifyData, setVerifyData] = useState<{ form: SignupForm; sessionToken: string; callPhone: string; callPhonePretty: string } | null>(null);
   const [polling, setPolling] = useState(false);
+  const [signupRetrying, setSignupRetrying] = useState(false);
   const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -82,6 +83,7 @@ export default function Auth() {
   };
 
   const completeSignUp = async (form: SignupForm, sessionToken: string) => {
+    setSignupRetrying(true);
     const { error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
@@ -95,6 +97,7 @@ export default function Auth() {
         },
       },
     });
+    setSignupRetrying(false);
     if (error) {
       toast({ title: "Не удалось создать аккаунт", description: error.message, variant: "destructive" });
       return false;
@@ -150,6 +153,7 @@ export default function Auth() {
     const callPhonePretty = (data as any).call_phone_pretty || callPhone;
     setVerifyData({ form, sessionToken, callPhone, callPhonePretty });
     setVerifyStep("calling");
+    setSignupRetrying(false);
     startPolling(sessionToken, form);
   };
 
@@ -157,6 +161,7 @@ export default function Auth() {
     stopPolling();
     setVerifyStep(null);
     setVerifyData(null);
+    setSignupRetrying(false);
   };
 
   const requestNewNumber = async () => {
@@ -199,10 +204,17 @@ export default function Auth() {
                 <Phone className="h-6 w-6" />
                 {verifyData.callPhonePretty}
               </a>
-              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                {polling && <Loader2 className="h-4 w-4 animate-spin" />}
-                Ожидаем входящий звонок…
-              </div>
+              {polling ? (
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Ожидаем входящий звонок…
+                </div>
+              ) : (
+                <Button className="w-full" onClick={() => completeSignUp(verifyData.form, verifyData.sessionToken)} disabled={signupRetrying}>
+                  {signupRetrying && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Завершить регистрацию
+                </Button>
+              )}
               <p className="text-xs text-center text-muted-foreground">
                 Аккаунт будет создан только после подтверждения номера.
               </p>
