@@ -21,6 +21,7 @@ export default function VerifyPhone() {
   const [step, setStep] = useState<"phone" | "code">("phone");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [callPhone, setCallPhone] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !session) navigate(`/auth?next=${encodeURIComponent("/verify-phone")}`, { replace: true });
