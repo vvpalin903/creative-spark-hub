@@ -45,7 +45,7 @@ export default function Auth() {
   const [suBusy, setSuBusy] = useState(false);
 
   // signup phone-verify step
-  const [verifyStep, setVerifyStep] = useState<null | "calling">(null);
+  const [verifyStep, setVerifyStep] = useState<null | "calling" | "finalizing">(null);
   const [verifyData, setVerifyData] = useState<{ form: SignupForm; sessionToken: string; callPhone: string; callPhonePretty: string } | null>(null);
   const [polling, setPolling] = useState(false);
   const [signupRetrying, setSignupRetrying] = useState(false);
