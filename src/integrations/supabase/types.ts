@@ -386,6 +386,48 @@ export type Database = {
         }
         Relationships: []
       }
+      pending_phone_verifications: {
+        Row: {
+          attempts: number
+          call_phone: string | null
+          check_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          phone: string
+          session_token: string
+          status: string
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          attempts?: number
+          call_phone?: string | null
+          check_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone: string
+          session_token: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          attempts?: number
+          call_phone?: string | null
+          check_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          phone?: string
+          session_token?: string
+          status?: string
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       phone_verifications: {
         Row: {
           attempts: number
