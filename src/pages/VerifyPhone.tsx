@@ -95,7 +95,7 @@ export default function VerifyPhone() {
             {step === "phone" ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Для продолжения работы подтвердите номер телефона. Мы отправим SMS с одноразовым кодом.
+                  Для подтверждения номера мы инициируем короткий звонок. Отвечать не нужно — введите последние <strong>4 цифры</strong> номера, с которого позвонили.
                 </p>
                 <div>
                   <Label htmlFor="phone">Номер телефона</Label>
@@ -110,21 +110,21 @@ export default function VerifyPhone() {
                 </div>
                 <Button className="w-full" onClick={sendCode} disabled={busy}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Получить код в SMS
+                  Получить звонок
                 </Button>
               </>
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Код отправлен на <strong>{phone}</strong>. Введите его ниже.
+                  На номер <strong>{phone}</strong> сейчас поступит звонок{callPhone ? <> с номера <strong>{callPhone}</strong></> : null}. Отвечать не нужно — введите последние 4 цифры этого номера.
                 </p>
                 <div>
-                  <Label htmlFor="code">Код из SMS</Label>
+                  <Label htmlFor="code">Последние 4 цифры</Label>
                   <Input
                     id="code"
                     inputMode="numeric"
                     autoComplete="one-time-code"
-                    maxLength={9}
+                    maxLength={4}
                     value={code}
                     onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
                   />
