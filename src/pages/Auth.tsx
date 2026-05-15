@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -9,10 +9,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, Building2, User as UserIcon } from "lucide-react";
+import { Loader2, Building2, User as UserIcon, Phone, ShieldCheck } from "lucide-react";
 import { signInSchema, signUpSchema } from "@/lib/validation";
 import { useAuth } from "@/hooks/useAuth";
-import { useEffect } from "react";
+
+type SignupForm = {
+  name: string;
+  email: string;
+  phone: string;
+  password: string;
+  role: "host" | "client";
+};
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -29,7 +36,7 @@ export default function Auth() {
   const [siPassword, setSiPassword] = useState("");
   const [siBusy, setSiBusy] = useState(false);
 
-  // signup
+  // signup form
   const [suName, setSuName] = useState("");
   const [suEmail, setSuEmail] = useState("");
   const [suPhone, setSuPhone] = useState("");
@@ -37,9 +44,25 @@ export default function Auth() {
   const [suRole, setSuRole] = useState<"host" | "client">(initialRole);
   const [suBusy, setSuBusy] = useState(false);
 
+  // signup phone-verify step
+  const [verifyStep, setVerifyStep] = useState<null | "calling">(null);
+  const [verifyData, setVerifyData] = useState<{ form: SignupForm; sessionToken: string; callPhone: string; callPhonePretty: string } | null>(null);
+  const [polling, setPolling] = useState(false);
+  const pollRef = useRef<number | null>(null);
+
   useEffect(() => {
-    if (!loading && session) navigate(next, { replace: true });
-  }, [loading, session, navigate, next]);
+    if (!loading && session && verifyStep === null) navigate(next, { replace: true });
+  }, [loading, session, navigate, next, verifyStep]);
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    setPolling(false);
+  };
+
+  useEffect(() => () => stopPolling(), []);
 
   const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,6 +81,49 @@ export default function Auth() {
     navigate(next, { replace: true });
   };
 
+  const completeSignUp = async (form: SignupForm, sessionToken: string) => {
+    const { error } = await supabase.auth.signUp({
+      email: form.email,
+      password: form.password,
+      options: {
+        emailRedirectTo: `${window.location.origin}${next}`,
+        data: {
+          name: form.name,
+          phone: form.phone,
+          role: form.role,
+          pre_verified_phone_token: sessionToken,
+        },
+      },
+    });
+    if (error) {
+      toast({ title: "Не удалось создать аккаунт", description: error.message, variant: "destructive" });
+      return false;
+    }
+    toast({ title: "Аккаунт создан", description: "Телефон подтверждён" });
+    navigate(form.role === "host" ? "/dashboard/host" : "/dashboard/client", { replace: true });
+    return true;
+  };
+
+  const startPolling = (sessionToken: string, form: SignupForm) => {
+    stopPolling();
+    setPolling(true);
+    const tick = async () => {
+      const { data, error } = await supabase.functions.invoke("phone-precheck-status", { body: { session_token: sessionToken } });
+      if (error) return;
+      const status = (data as any)?.status;
+      if (status === "verified") {
+        stopPolling();
+        await completeSignUp(form, sessionToken);
+      } else if (status === "expired" || status === "not_found") {
+        stopPolling();
+        toast({ title: "Время истекло", description: "Запросите новый номер для звонка.", variant: "destructive" });
+        setVerifyStep(null);
+        setVerifyData(null);
+      }
+    };
+    pollRef.current = window.setInterval(tick, 3000);
+  };
+
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = signUpSchema.safeParse({
@@ -72,26 +138,88 @@ export default function Auth() {
       return;
     }
     setSuBusy(true);
-    const { error } = await supabase.auth.signUp({
-      email: parsed.data.email,
-      password: parsed.data.password,
-      options: {
-        emailRedirectTo: `${window.location.origin}${next}`,
-        data: {
-          name: parsed.data.name,
-          phone: parsed.data.phone,
-          role: parsed.data.role,
-        },
-      },
-    });
+    const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: parsed.data.phone } });
     setSuBusy(false);
-    if (error) {
-      toast({ title: "Не удалось создать аккаунт", description: error.message, variant: "destructive" });
+    if (error || (data as any)?.error) {
+      toast({ title: "Ошибка", description: (data as any)?.error || error?.message || "Не удалось инициировать проверку", variant: "destructive" });
       return;
     }
-    toast({ title: "Аккаунт создан", description: "Подтвердите номер телефона по SMS" });
-    navigate(`/verify-phone?next=${encodeURIComponent(parsed.data.role === "host" ? "/dashboard/host" : "/dashboard/client")}`, { replace: true });
+    const form: SignupForm = parsed.data;
+    const sessionToken = (data as any).session_token;
+    const callPhone = (data as any).call_phone;
+    const callPhonePretty = (data as any).call_phone_pretty || callPhone;
+    setVerifyData({ form, sessionToken, callPhone, callPhonePretty });
+    setVerifyStep("calling");
+    startPolling(sessionToken, form);
   };
+
+  const cancelVerify = () => {
+    stopPolling();
+    setVerifyStep(null);
+    setVerifyData(null);
+  };
+
+  const requestNewNumber = async () => {
+    if (!verifyData) return;
+    stopPolling();
+    setSuBusy(true);
+    const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: verifyData.form.phone } });
+    setSuBusy(false);
+    if (error || (data as any)?.error) {
+      toast({ title: "Ошибка", description: (data as any)?.error || error?.message, variant: "destructive" });
+      startPolling(verifyData.sessionToken, verifyData.form);
+      return;
+    }
+    const sessionToken = (data as any).session_token;
+    const callPhone = (data as any).call_phone;
+    const callPhonePretty = (data as any).call_phone_pretty || callPhone;
+    setVerifyData({ ...verifyData, sessionToken, callPhone, callPhonePretty });
+    startPolling(sessionToken, verifyData.form);
+  };
+
+  if (verifyStep === "calling" && verifyData) {
+    return (
+      <Layout>
+        <div className="container py-12 max-w-md">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+                Подтверждение телефона
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                С телефона <strong>{verifyData.form.phone}</strong> позвоните на номер ниже. Звонок бесплатный, отвечать не нужно — мы автоматически засчитаем входящий вызов и завершим регистрацию.
+              </p>
+              <a
+                href={`tel:${verifyData.callPhone}`}
+                className="flex items-center justify-center gap-3 rounded-lg border-2 border-primary bg-primary/5 px-4 py-6 text-2xl font-semibold text-primary transition hover:bg-primary/10"
+              >
+                <Phone className="h-6 w-6" />
+                {verifyData.callPhonePretty}
+              </a>
+              <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                {polling && <Loader2 className="h-4 w-4 animate-spin" />}
+                Ожидаем входящий звонок…
+              </div>
+              <p className="text-xs text-center text-muted-foreground">
+                Аккаунт будет создан только после подтверждения номера.
+              </p>
+              <div className="flex items-center justify-between text-sm">
+                <button type="button" className="text-muted-foreground underline" onClick={cancelVerify}>
+                  Отменить
+                </button>
+                <button type="button" className="text-primary disabled:text-muted-foreground" onClick={requestNewNumber} disabled={suBusy}>
+                  Запросить новый номер
+                </button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -165,7 +293,7 @@ export default function Auth() {
                   </div>
                   <Button type="submit" className="w-full" disabled={suBusy}>
                     {suBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                    Создать аккаунт
+                    Продолжить и подтвердить телефон
                   </Button>
                 </form>
               </TabsContent>

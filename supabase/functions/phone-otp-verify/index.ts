@@ -57,9 +57,9 @@ Deno.serve(async (req) => {
     const smsRes = await fetch(`${SMSRU_CALLCHECK_STATUS}?${params.toString()}`);
     const smsJson = await smsRes.json().catch(() => ({} as any));
 
-    // sms.ru: check_status 401 = ожидание звонка, 400 = звонок принят (успех)
+    // sms.ru: check_status 401 = ожидание звонка, 402 = звонок принят (успех)
     const checkStatus = Number(smsJson?.check_status);
-    const verified = smsJson?.status === "OK" && checkStatus === 400;
+    const verified = smsJson?.status === "OK" && checkStatus === 402;
 
     if (!verified) {
       return new Response(JSON.stringify({

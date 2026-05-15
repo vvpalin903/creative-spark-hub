@@ -14,3 +14,9 @@ verify_jwt = false
 
 [functions.delete-account]
 verify_jwt = false
+
+[functions.phone-precheck-init]
+verify_jwt = false
+
+[functions.phone-precheck-status]
+verify_jwt = false
