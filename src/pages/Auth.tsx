@@ -45,7 +45,7 @@ export default function Auth() {
   const [suBusy, setSuBusy] = useState(false);
 
   // signup phone-verify step
-  const [verifyStep, setVerifyStep] = useState<null | "calling">(null);
+  const [verifyStep, setVerifyStep] = useState<null | "calling" | "finalizing">(null);
   const [verifyData, setVerifyData] = useState<{ form: SignupForm; sessionToken: string; callPhone: string; callPhonePretty: string } | null>(null);
   const [polling, setPolling] = useState(false);
   const [signupRetrying, setSignupRetrying] = useState(false);
@@ -84,7 +84,8 @@ export default function Auth() {
 
   const completeSignUp = async (form: SignupForm, sessionToken: string) => {
     setSignupRetrying(true);
-    const { error } = await supabase.auth.signUp({
+    setVerifyStep("finalizing");
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -97,13 +98,18 @@ export default function Auth() {
         },
       },
     });
-    setSignupRetrying(false);
     if (error) {
+      setSignupRetrying(false);
+      setVerifyStep("calling");
       toast({ title: "Не удалось создать аккаунт", description: error.message, variant: "destructive" });
       return false;
     }
     toast({ title: "Аккаунт создан", description: "Телефон подтверждён" });
-    navigate(form.role === "host" ? "/dashboard/host" : "/dashboard/client", { replace: true });
+    // Если сессия пришла сразу — переходим. Иначе оставляем экран "finalizing"
+    // чтобы не показывать форму регистрации повторно.
+    if (signUpData.session) {
+      navigate(form.role === "host" ? "/dashboard/host" : "/dashboard/client", { replace: true });
+    }
     return true;
   };
 
@@ -182,7 +188,7 @@ export default function Auth() {
     startPolling(sessionToken, verifyData.form);
   };
 
-  if (verifyStep === "calling" && verifyData) {
+  if ((verifyStep === "calling" || verifyStep === "finalizing") && verifyData) {
     return (
       <Layout>
         <div className="container py-12 max-w-md">
@@ -194,38 +200,47 @@ export default function Auth() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                С телефона <strong>{verifyData.form.phone}</strong> позвоните на номер ниже. Звонок бесплатный, отвечать не нужно — мы автоматически засчитаем входящий вызов и завершим регистрацию.
-              </p>
-              <a
-                href={`tel:${verifyData.callPhone}`}
-                className="flex items-center justify-center gap-3 rounded-lg border-2 border-primary bg-primary/5 px-4 py-6 text-2xl font-semibold text-primary transition hover:bg-primary/10"
-              >
-                <Phone className="h-6 w-6" />
-                {verifyData.callPhonePretty}
-              </a>
-              {polling ? (
-                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Ожидаем входящий звонок…
+              {verifyStep === "finalizing" ? (
+                <div className="flex flex-col items-center justify-center gap-3 py-10 text-sm text-muted-foreground">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  Завершаем регистрацию…
                 </div>
               ) : (
-                <Button className="w-full" onClick={() => completeSignUp(verifyData.form, verifyData.sessionToken)} disabled={signupRetrying}>
-                  {signupRetrying && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Завершить регистрацию
-                </Button>
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    С телефона <strong>{verifyData.form.phone}</strong> позвоните на номер ниже. Звонок бесплатный, отвечать не нужно — мы автоматически засчитаем входящий вызов и завершим регистрацию.
+                  </p>
+                  <a
+                    href={`tel:${verifyData.callPhone}`}
+                    className="flex items-center justify-center gap-3 rounded-lg border-2 border-primary bg-primary/5 px-4 py-6 text-2xl font-semibold text-primary transition hover:bg-primary/10"
+                  >
+                    <Phone className="h-6 w-6" />
+                    {verifyData.callPhonePretty}
+                  </a>
+                  {polling ? (
+                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Ожидаем входящий звонок…
+                    </div>
+                  ) : (
+                    <Button className="w-full" onClick={() => completeSignUp(verifyData.form, verifyData.sessionToken)} disabled={signupRetrying}>
+                      {signupRetrying && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                      Завершить регистрацию
+                    </Button>
+                  )}
+                  <p className="text-xs text-center text-muted-foreground">
+                    Аккаунт будет создан только после подтверждения номера.
+                  </p>
+                  <div className="flex items-center justify-between text-sm">
+                    <button type="button" className="text-muted-foreground underline" onClick={cancelVerify}>
+                      Отменить
+                    </button>
+                    <button type="button" className="text-primary disabled:text-muted-foreground" onClick={requestNewNumber} disabled={suBusy}>
+                      Запросить новый номер
+                    </button>
+                  </div>
+                </>
               )}
-              <p className="text-xs text-center text-muted-foreground">
-                Аккаунт будет создан только после подтверждения номера.
-              </p>
-              <div className="flex items-center justify-between text-sm">
-                <button type="button" className="text-muted-foreground underline" onClick={cancelVerify}>
-                  Отменить
-                </button>
-                <button type="button" className="text-primary disabled:text-muted-foreground" onClick={requestNewNumber} disabled={suBusy}>
-                  Запросить новый номер
-                </button>
-              </div>
             </CardContent>
           </Card>
         </div>
