@@ -188,7 +188,7 @@ export default function Auth() {
     startPolling(sessionToken, verifyData.form);
   };
 
-  if (verifyStep === "calling" && verifyData) {
+  if ((verifyStep === "calling" || verifyStep === "finalizing") && verifyData) {
     return (
       <Layout>
         <div className="container py-12 max-w-md">
