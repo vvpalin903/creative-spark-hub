@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, ShieldCheck } from "lucide-react";
+import { Loader2, Phone, ShieldCheck } from "lucide-react";
 
 export default function VerifyPhone() {
   const navigate = useNavigate();
@@ -17,11 +17,13 @@ export default function VerifyPhone() {
   const { user, session, loading, phoneVerified, refreshPhoneVerified } = useAuth();
 
   const [phone, setPhone] = useState("");
-  const [code, setCode] = useState("");
-  const [step, setStep] = useState<"phone" | "code">("phone");
+  const [step, setStep] = useState<"phone" | "call">("phone");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [callPhone, setCallPhone] = useState<string | null>(null);
+  const [callPhonePretty, setCallPhonePretty] = useState<string | null>(null);
+  const [polling, setPolling] = useState(false);
+  const pollRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!loading && !session) navigate(`/auth?next=${encodeURIComponent("/verify-phone")}`, { replace: true });
@@ -32,7 +34,6 @@ export default function VerifyPhone() {
   }, [phoneVerified, navigate, next]);
 
   useEffect(() => {
-    // prefill phone from profile
     if (user) {
       supabase.from("profiles").select("phone").eq("user_id", user.id).maybeSingle().then(({ data }) => {
         if (data?.phone) setPhone(data.phone);
@@ -46,6 +47,37 @@ export default function VerifyPhone() {
     return () => clearTimeout(t);
   }, [cooldown]);
 
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+    setPolling(false);
+  };
+
+  useEffect(() => () => stopPolling(), []);
+
+  const startPolling = () => {
+    stopPolling();
+    setPolling(true);
+    const tick = async () => {
+      const { data, error } = await supabase.functions.invoke("phone-otp-verify", { body: {} });
+      if (error) return;
+      const status = (data as any)?.status;
+      if (status === "verified") {
+        stopPolling();
+        toast({ title: "Телефон подтверждён" });
+        await refreshPhoneVerified();
+        navigate(next, { replace: true });
+      } else if (status === "expired") {
+        stopPolling();
+        toast({ title: "Время истекло", description: "Запросите новую проверку.", variant: "destructive" });
+        setStep("phone");
+      }
+    };
+    pollRef.current = window.setInterval(tick, 3000);
+  };
+
   const sendCode = async () => {
     if (!phone || phone.replace(/\D/g, "").length < 10) {
       toast({ title: "Введите телефон", description: "Не менее 10 цифр", variant: "destructive" });
@@ -55,30 +87,14 @@ export default function VerifyPhone() {
     const { data, error } = await supabase.functions.invoke("phone-otp-send", { body: { phone } });
     setBusy(false);
     if (error || (data as any)?.error) {
-      toast({ title: "Ошибка", description: (data as any)?.error || error?.message || "Не удалось отправить код", variant: "destructive" });
+      toast({ title: "Ошибка", description: (data as any)?.error || error?.message || "Не удалось инициировать проверку", variant: "destructive" });
       return;
     }
-    toast({ title: "Сейчас поступит звонок", description: "Введите последние 4 цифры номера, с которого позвонили. Отвечать не нужно." });
     setCallPhone((data as any)?.call_phone ?? null);
-    setStep("code");
+    setCallPhonePretty((data as any)?.call_phone_pretty ?? (data as any)?.call_phone ?? null);
+    setStep("call");
     setCooldown(60);
-  };
-
-  const verifyCode = async () => {
-    if (!/^\d{3,9}$/.test(code)) {
-      toast({ title: "Введите код из SMS", variant: "destructive" });
-      return;
-    }
-    setBusy(true);
-    const { data, error } = await supabase.functions.invoke("phone-otp-verify", { body: { code } });
-    setBusy(false);
-    if (error || (data as any)?.error) {
-      toast({ title: "Неверный код", description: (data as any)?.error || error?.message, variant: "destructive" });
-      return;
-    }
-    toast({ title: "Телефон подтверждён" });
-    await refreshPhoneVerified();
-    navigate(next, { replace: true });
+    startPolling();
   };
 
   return (
@@ -95,7 +111,7 @@ export default function VerifyPhone() {
             {step === "phone" ? (
               <>
                 <p className="text-sm text-muted-foreground">
-                  Для подтверждения номера мы инициируем короткий звонок. Отвечать не нужно — введите последние <strong>4 цифры</strong> номера, с которого позвонили.
+                  Для подтверждения номера мы покажем вам бесплатный номер. Позвоните на него с указанного телефона — ответа ждать не нужно, мы сами засчитаем входящий звонок.
                 </p>
                 <div>
                   <Label htmlFor="phone">Номер телефона</Label>
@@ -110,34 +126,30 @@ export default function VerifyPhone() {
                 </div>
                 <Button className="w-full" onClick={sendCode} disabled={busy}>
                   {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Получить звонок
+                  Получить номер для звонка
                 </Button>
               </>
             ) : (
               <>
                 <p className="text-sm text-muted-foreground">
-                  На номер <strong>{phone}</strong> сейчас поступит звонок{callPhone ? <> с номера <strong>{callPhone}</strong></> : null}. Отвечать не нужно — введите последние 4 цифры этого номера.
+                  С телефона <strong>{phone}</strong> позвоните на номер ниже. Звонок бесплатный, отвечать не нужно — мы автоматически засчитаем входящий вызов.
                 </p>
-                <div>
-                  <Label htmlFor="code">Последние 4 цифры</Label>
-                  <Input
-                    id="code"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    maxLength={4}
-                    value={code}
-                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ""))}
-                  />
+                <a
+                  href={callPhone ? `tel:${callPhone}` : undefined}
+                  className="flex items-center justify-center gap-3 rounded-lg border-2 border-primary bg-primary/5 px-4 py-6 text-2xl font-semibold text-primary transition hover:bg-primary/10"
+                >
+                  <Phone className="h-6 w-6" />
+                  {callPhonePretty || callPhone || "—"}
+                </a>
+                <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                  {polling && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Ожидаем входящий звонок…
                 </div>
-                <Button className="w-full" onClick={verifyCode} disabled={busy}>
-                  {busy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
-                  Подтвердить
-                </Button>
                 <div className="flex items-center justify-between text-sm">
                   <button
                     type="button"
                     className="text-muted-foreground underline"
-                    onClick={() => setStep("phone")}
+                    onClick={() => { stopPolling(); setStep("phone"); }}
                   >
                     Изменить номер
                   </button>
@@ -147,7 +159,7 @@ export default function VerifyPhone() {
                     disabled={cooldown > 0 || busy}
                     onClick={sendCode}
                   >
-                    {cooldown > 0 ? `Отправить ещё раз через ${cooldown}с` : "Отправить ещё раз"}
+                    {cooldown > 0 ? `Повторить через ${cooldown}с` : "Запросить новый номер"}
                   </button>
                 </div>
               </>
