@@ -34,16 +34,27 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Rate-limit by phone: max 1 init per 60 sec
-    const { data: recent } = await admin
+    // Reuse an existing live (pending, non-expired) session for this phone
+    // instead of rate-limiting / creating duplicates.
+    const { data: existing } = await admin
       .from("pending_phone_verifications")
-      .select("created_at")
+      .select("*")
       .eq("phone", phone)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (recent && Date.now() - new Date(recent.created_at).getTime() < 60_000) {
-      return new Response(JSON.stringify({ error: "Подождите перед повторной проверкой" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (existing) {
+      return new Response(JSON.stringify({
+        ok: true,
+        reused: true,
+        session_token: existing.session_token,
+        phone: existing.phone,
+        call_phone: existing.call_phone,
+        call_phone_pretty: existing.call_phone,
+        expires_at: existing.expires_at,
+      }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const params = new URLSearchParams({ api_id: apiId, phone, ip: "-1", json: "1" });
