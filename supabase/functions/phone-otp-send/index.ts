@@ -64,7 +64,7 @@ Deno.serve(async (req) => {
     const smsRes = await fetch(`${SMSRU_CALLCHECK_ADD}?${params.toString()}`);
     const smsJson = await smsRes.json().catch(() => ({} as any));
 
-    if (smsJson?.status !== "OK" || !smsJson?.check_id || !smsJson?.code) {
+    if (smsJson?.status !== "OK" || !smsJson?.check_id || !smsJson?.call_phone) {
       console.error("sms.ru callcheck/add error", smsJson);
       return new Response(JSON.stringify({
         error: smsJson?.status_text || "Не удалось инициировать звонок",
@@ -73,8 +73,9 @@ Deno.serve(async (req) => {
     }
 
     const checkId: string = String(smsJson.check_id);
-    const expectedCode: string = String(smsJson.code);
-    const callPhone: string | undefined = smsJson.call_phone;
+    const callPhone: string = String(smsJson.call_phone);
+    // Code = last 4 digits of the calling number
+    const expectedCode: string = callPhone.replace(/\D/g, "").slice(-4);
 
     // Store check_id and expected code together in auth_id (no schema change)
     const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
