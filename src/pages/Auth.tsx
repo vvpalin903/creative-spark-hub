@@ -84,7 +84,8 @@ export default function Auth() {
 
   const completeSignUp = async (form: SignupForm, sessionToken: string) => {
     setSignupRetrying(true);
-    const { error } = await supabase.auth.signUp({
+    setVerifyStep("finalizing");
+    const { data: signUpData, error } = await supabase.auth.signUp({
       email: form.email,
       password: form.password,
       options: {
@@ -97,13 +98,18 @@ export default function Auth() {
         },
       },
     });
-    setSignupRetrying(false);
     if (error) {
+      setSignupRetrying(false);
+      setVerifyStep("calling");
       toast({ title: "Не удалось создать аккаунт", description: error.message, variant: "destructive" });
       return false;
     }
     toast({ title: "Аккаунт создан", description: "Телефон подтверждён" });
-    navigate(form.role === "host" ? "/dashboard/host" : "/dashboard/client", { replace: true });
+    // Если сессия пришла сразу — переходим. Иначе оставляем экран "finalizing"
+    // чтобы не показывать форму регистрации повторно.
+    if (signUpData.session) {
+      navigate(form.role === "host" ? "/dashboard/host" : "/dashboard/client", { replace: true });
+    }
     return true;
   };
 
