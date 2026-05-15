@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Подождите перед повторной отправкой кода" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    // sms.ru callcheck/add — initiates a call; user sees caller-ID, last 4 digits = code
+    // sms.ru callcheck/add — user will be asked to call this number
     const params = new URLSearchParams({ api_id: apiId, phone, ip: "-1", json: "1" });
     const smsRes = await fetch(`${SMSRU_CALLCHECK_ADD}?${params.toString()}`);
     const smsJson = await smsRes.json().catch(() => ({} as any));
@@ -67,22 +67,20 @@ Deno.serve(async (req) => {
     if (smsJson?.status !== "OK" || !smsJson?.check_id || !smsJson?.call_phone) {
       console.error("sms.ru callcheck/add error", smsJson);
       return new Response(JSON.stringify({
-        error: smsJson?.status_text || "Не удалось инициировать звонок",
+        error: smsJson?.status_text || "Не удалось инициировать проверку",
         details: smsJson,
       }), { status: 502, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
     const checkId: string = String(smsJson.check_id);
     const callPhone: string = String(smsJson.call_phone);
-    // Code = last 4 digits of the calling number
-    const expectedCode: string = callPhone.replace(/\D/g, "").slice(-4);
+    const callPhonePretty: string = String(smsJson.call_phone_pretty ?? smsJson.call_phone);
 
-    // Store check_id and expected code together in auth_id (no schema change)
     const expiresAt = new Date(Date.now() + 5 * 60_000).toISOString();
     await admin.from("phone_verifications").insert({
       user_id: userId,
       phone,
-      auth_id: `${checkId}|${expectedCode}`,
+      auth_id: checkId,
       status: "pending",
       expires_at: expiresAt,
     });
@@ -93,8 +91,8 @@ Deno.serve(async (req) => {
       ok: true,
       phone,
       call_phone: callPhone,
+      call_phone_pretty: callPhonePretty,
       expires_at: expiresAt,
-      method: "callcheck",
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
