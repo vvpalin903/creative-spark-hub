@@ -49,14 +49,20 @@ Deno.serve(async (req) => {
     const smsRes = await fetch(`${SMSRU_CALLCHECK_STATUS}?${params.toString()}`);
     const smsJson = await smsRes.json().catch(() => ({} as any));
 
-    // sms.ru: check_status 401 = ожидание звонка, 402 = звонок принят (успех)
+    // sms.ru codes: 400 = ожидаем звонка, 401 = подтверждён, 402 = истекло
     const checkStatus = Number(smsJson?.check_status);
-    const verified = smsJson?.status === "OK" && checkStatus === 402;
+    const verified = smsJson?.status === "OK" && checkStatus === 401;
+    const expired = smsJson?.status === "OK" && checkStatus === 402;
 
     await admin
       .from("pending_phone_verifications")
       .update({ attempts: (pv.attempts ?? 0) + 1 })
       .eq("id", pv.id);
+
+    if (expired) {
+      await admin.from("pending_phone_verifications").update({ status: "expired" }).eq("id", pv.id);
+      return new Response(JSON.stringify({ status: "expired", check_status: checkStatus, check_status_text: smsJson?.check_status_text }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
 
     if (!verified) {
       return new Response(JSON.stringify({
