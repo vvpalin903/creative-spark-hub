@@ -49,7 +49,7 @@ export default function LotDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("name")
+        .select("name, host_plan")
         .eq("user_id", object!.host_user_id!)
         .maybeSingle();
       return data;
