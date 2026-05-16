@@ -31,8 +31,8 @@ export default function VerifyPhone() {
   }, [loading, session, navigate]);
 
   useEffect(() => {
-    if (phoneVerified) navigate(next, { replace: true });
-  }, [phoneVerified, navigate, next]);
+    if (!loading && session && (phoneVerified || params.has("next"))) navigate(next, { replace: true });
+  }, [loading, session, phoneVerified, params, navigate, next]);
 
   useEffect(() => {
     if (user) {
