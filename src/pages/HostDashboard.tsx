@@ -124,13 +124,29 @@ function ObjectsTab() {
     onError: (e: any) => { if (e?.message !== "limit") toast({ title: "Ошибка", description: e.message, variant: "destructive" }); },
   });
 
+  const totalCount = (objects || []).filter((o: any) => o.object_status !== "archived").length;
+  const atLimit = plan !== "super_host" && totalCount >= 2;
+
+  const handleNew = () => {
+    if (atLimit) {
+      toast({
+        title: "Достигнут лимит обычного хоста",
+        description: "Чтобы создать больше двух объектов, подключите статус Супер хост — 199 ₽ в месяц.",
+        variant: "destructive",
+      });
+      return;
+    }
+    setEditing(null);
+    setOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <p className="text-sm text-muted-foreground">
           {objects?.length || 0} {objects?.length === 1 ? "объект" : "объектов"}
         </p>
-        <Button onClick={() => { setEditing(null); setOpen(true); }}>
+        <Button onClick={handleNew}>
           <Plus className="h-4 w-4 mr-2" /> Новый объект
         </Button>
       </div>
