@@ -140,7 +140,7 @@ export function HostPlanSection() {
                 <div className="space-y-2">
                   <p className="font-medium">Супер хост — 199 ₽ в месяц</p>
                   <p className="text-sm text-muted-foreground">
-                    Чтобы разместить больше одного объекта, подключите статус Супер хост.
+                    Чтобы разместить больше двух объектов, подключите статус Супер хост.
                   </p>
                   <ul className="text-sm text-muted-foreground space-y-1">
                     <li className="flex items-center gap-2"><Check className="h-3.5 w-3.5 text-primary" /> Неограниченное число активных размещений</li>
