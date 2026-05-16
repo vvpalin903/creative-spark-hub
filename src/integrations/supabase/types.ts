@@ -315,6 +315,48 @@ export type Database = {
         }
         Relationships: []
       }
+      host_plan_requests: {
+        Row: {
+          admin_comment: string | null
+          comment: string | null
+          contact_email: string | null
+          contact_phone: string | null
+          contact_telegram: string | null
+          created_at: string
+          host_user_id: string
+          id: string
+          requested_plan: Database["public"]["Enums"]["host_plan"]
+          status: Database["public"]["Enums"]["host_plan_request_status"]
+          updated_at: string
+        }
+        Insert: {
+          admin_comment?: string | null
+          comment?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_telegram?: string | null
+          created_at?: string
+          host_user_id: string
+          id?: string
+          requested_plan?: Database["public"]["Enums"]["host_plan"]
+          status?: Database["public"]["Enums"]["host_plan_request_status"]
+          updated_at?: string
+        }
+        Update: {
+          admin_comment?: string | null
+          comment?: string | null
+          contact_email?: string | null
+          contact_phone?: string | null
+          contact_telegram?: string | null
+          created_at?: string
+          host_user_id?: string
+          id?: string
+          requested_plan?: Database["public"]["Enums"]["host_plan"]
+          status?: Database["public"]["Enums"]["host_plan_request_status"]
+          updated_at?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           chat_id: string
@@ -540,11 +582,15 @@ export type Database = {
           district: string | null
           email: string | null
           email_verified: boolean
+          host_plan: Database["public"]["Enums"]["host_plan"]
+          host_plan_expires_at: string | null
+          host_plan_started_at: string | null
           id: string
           name: string | null
           notification_prefs: Json
           phone: string | null
           phone_verified: boolean
+          telegram: string | null
           updated_at: string
           user_id: string
           verification_status: Database["public"]["Enums"]["user_verification_status"]
@@ -557,11 +603,15 @@ export type Database = {
           district?: string | null
           email?: string | null
           email_verified?: boolean
+          host_plan?: Database["public"]["Enums"]["host_plan"]
+          host_plan_expires_at?: string | null
+          host_plan_started_at?: string | null
           id?: string
           name?: string | null
           notification_prefs?: Json
           phone?: string | null
           phone_verified?: boolean
+          telegram?: string | null
           updated_at?: string
           user_id: string
           verification_status?: Database["public"]["Enums"]["user_verification_status"]
@@ -574,11 +624,15 @@ export type Database = {
           district?: string | null
           email?: string | null
           email_verified?: boolean
+          host_plan?: Database["public"]["Enums"]["host_plan"]
+          host_plan_expires_at?: string | null
+          host_plan_started_at?: string | null
           id?: string
           name?: string | null
           notification_prefs?: Json
           phone?: string | null
           phone_verified?: boolean
+          telegram?: string | null
           updated_at?: string
           user_id?: string
           verification_status?: Database["public"]["Enums"]["user_verification_status"]
@@ -939,6 +993,13 @@ export type Database = {
       chat_type: "host_client" | "admin_host" | "admin_client" | "support"
       client_app_status: "new" | "sent_to_host" | "completed" | "rejected"
       host_app_status: "new" | "verified" | "rejected"
+      host_plan: "standard" | "super_host"
+      host_plan_request_status:
+        | "new"
+        | "contacted"
+        | "paid"
+        | "activated"
+        | "cancelled"
       lot_category: "tires" | "bikes" | "other"
       lot_status: "draft" | "published" | "archived"
       message_type: "text" | "system" | "file"
@@ -1149,6 +1210,14 @@ export const Constants = {
       chat_type: ["host_client", "admin_host", "admin_client", "support"],
       client_app_status: ["new", "sent_to_host", "completed", "rejected"],
       host_app_status: ["new", "verified", "rejected"],
+      host_plan: ["standard", "super_host"],
+      host_plan_request_status: [
+        "new",
+        "contacted",
+        "paid",
+        "activated",
+        "cancelled",
+      ],
       lot_category: ["tires", "bikes", "other"],
       lot_status: ["draft", "published", "archived"],
       message_type: ["text", "system", "file"],
