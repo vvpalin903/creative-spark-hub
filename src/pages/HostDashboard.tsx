@@ -47,6 +47,7 @@ export default function HostDashboard() {
         <Route path="requests" element={<RequestsTab />} />
         <Route path="history" element={<HistoryTab />} />
         <Route path="tickets" element={<TicketsSection role="host" />} />
+        <Route path="plan" element={<HostPlanSection />} />
         <Route path="verification" element={<VerificationTab />} />
         <Route path="*" element={<Navigate to="/dashboard/host" replace />} />
       </Routes>
