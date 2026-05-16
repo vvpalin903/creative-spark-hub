@@ -167,9 +167,23 @@ export default function Profile() {
         <Card>
           <CardHeader><CardTitle>Смена пароля</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <Input type="password" placeholder="Новый пароль" value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)} minLength={8} />
-            <Button variant="outline" onClick={changePassword} disabled={!newPassword}>Обновить пароль</Button>
+            {isAdmin ? (
+              <>
+                <Input type="password" placeholder="Новый пароль" value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)} minLength={8} />
+                <Button variant="outline" onClick={changePassword} disabled={!newPassword}>Обновить пароль</Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Мы отправим письмо со ссылкой для смены пароля на {user?.email}.
+                </p>
+                <Button variant="outline" onClick={sendPasswordResetEmail} disabled={sendingReset || !user?.email}>
+                  {sendingReset && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Отправить ссылку для смены пароля
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
