@@ -139,6 +139,7 @@ function AdminDashboard({ isRealAdmin }: { isRealAdmin: boolean }) {
             <TabsTrigger value="superhost">Супер хост</TabsTrigger>
             <TabsTrigger value="users">Пользователи</TabsTrigger>
             <TabsTrigger value="verification">Документы хостов</TabsTrigger>
+            <TabsTrigger value="objectdocs">Документы объектов</TabsTrigger>
             <TabsTrigger value="documents">Сайт-доки</TabsTrigger>
           </TabsList>
 
@@ -148,6 +149,7 @@ function AdminDashboard({ isRealAdmin }: { isRealAdmin: boolean }) {
           <TabsContent value="superhost"><SuperHostTab /></TabsContent>
           <TabsContent value="users"><UsersTab isRealAdmin={isRealAdmin} /></TabsContent>
           <TabsContent value="verification"><VerificationDocsTab /></TabsContent>
+          <TabsContent value="objectdocs"><ObjectDocsTab /></TabsContent>
           <TabsContent value="documents"><DocumentsTab /></TabsContent>
         </Tabs>
       </div>
