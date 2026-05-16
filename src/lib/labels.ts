@@ -109,3 +109,25 @@ export const userVerificationStatusLabels: Record<string, string> = {
   verified: "Подтверждён",
   rejected: "Отклонён",
 };
+
+export const hostPlanLabels: Record<string, string> = {
+  standard: "Обычный хост",
+  super_host: "Супер хост",
+};
+
+export const hostPlanRequestStatusLabels: Record<string, string> = {
+  new: "Новая",
+  contacted: "Связались",
+  paid: "Оплачено",
+  activated: "Активировано",
+  cancelled: "Отменено",
+};
+
+export const hostPlanRequestStatusColors: Record<string, string> = {
+  new: "bg-warning/10 text-warning",
+  contacted: "bg-primary/10 text-primary",
+  paid: "bg-primary/10 text-primary",
+  activated: "bg-primary text-primary-foreground",
+  cancelled: "bg-muted text-muted-foreground",
+};
+
