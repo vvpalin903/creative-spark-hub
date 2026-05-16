@@ -91,6 +91,18 @@ export const placementStatusLabels: Record<string, string> = {
   disputed: "Спор",
 };
 
+export const ticketStatusLabels: Record<string, string> = {
+  new: "Новое",
+  in_progress: "В работе",
+  closed: "Закрыто",
+};
+
+export const ticketStatusColors: Record<string, string> = {
+  new: "bg-warning/10 text-warning",
+  in_progress: "bg-primary/10 text-primary",
+  closed: "bg-muted text-muted-foreground",
+};
+
 export const userVerificationStatusLabels: Record<string, string> = {
   unverified: "Не подтверждён",
   pending: "На проверке",
