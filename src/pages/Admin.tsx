@@ -10,16 +10,19 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Pencil } from "lucide-react";
+import { Loader2, LogOut, Pencil, Plus } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { DocumentsTab } from "@/components/admin/DocumentsTab";
 import { VerificationDocsTab } from "@/components/admin/VerificationDocsTab";
+import { CreateTicketDialog, TicketDetailDialog } from "@/components/tickets/TicketsSection";
 import NotFound from "./NotFound";
 import {
   bookingRequestStatusLabels,
   objectStatusColors,
   objectStatusLabels,
   objectVerificationStatusLabels,
+  ticketStatusColors,
+  ticketStatusLabels,
   userVerificationStatusLabels,
 } from "@/lib/labels";
 import type { Enums, Tables } from "@/integrations/supabase/types";
