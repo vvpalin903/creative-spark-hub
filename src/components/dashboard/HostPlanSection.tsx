@@ -13,7 +13,7 @@ import { Crown, Check } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { hostPlanLabels, hostPlanRequestStatusLabels, hostPlanRequestStatusColors } from "@/lib/labels";
 
-const STANDARD_LIMIT = 1;
+const STANDARD_LIMIT = 2;
 
 export function useHostPlan() {
   const { user } = useAuth();
