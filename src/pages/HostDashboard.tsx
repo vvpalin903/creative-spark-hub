@@ -60,6 +60,7 @@ function ObjectsTab() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Tables<"host_objects"> | null>(null);
   const queryClient = useQueryClient();
+  const { plan } = useHostPlan();
 
   const { data: objects, isLoading } = useQuery({
     queryKey: ["host", "objects", user?.id],
@@ -75,8 +76,25 @@ function ObjectsTab() {
     enabled: !!user,
   });
 
+  const activeOthersCount = (id: string) =>
+    (objects || []).filter((o: any) => o.id !== id && !["draft", "archived"].includes(o.object_status)).length;
+
+  const blockIfOverLimit = (id: string): boolean => {
+    if (plan === "super_host") return false;
+    if (activeOthersCount(id) >= 1) {
+      toast({
+        title: "Доступно только одно активное размещение",
+        description: "Чтобы разместить больше одного объекта, подключите статус Супер хост — 199 ₽ в месяц.",
+        variant: "destructive",
+      });
+      return true;
+    }
+    return false;
+  };
+
   const submitForReview = useMutation({
     mutationFn: async (id: string) => {
+      if (blockIfOverLimit(id)) throw new Error("limit");
       const { error } = await supabase
         .from("host_objects")
         .update({ object_status: "pending_review", verification_status: "pending" })
@@ -87,10 +105,12 @@ function ObjectsTab() {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
       toast({ title: "Объект отправлен на публикацию" });
     },
+    onError: (e: any) => { if (e?.message !== "limit") toast({ title: "Ошибка", description: e.message, variant: "destructive" }); },
   });
 
   const toggleHidden = useMutation({
     mutationFn: async ({ id, hide }: { id: string; hide: boolean }) => {
+      if (!hide && blockIfOverLimit(id)) throw new Error("limit");
       const { error } = await supabase
         .from("host_objects")
         .update({ object_status: hide ? "hidden" : "published" })
@@ -101,6 +121,7 @@ function ObjectsTab() {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
       toast({ title: "Статус обновлён" });
     },
+    onError: (e: any) => { if (e?.message !== "limit") toast({ title: "Ошибка", description: e.message, variant: "destructive" }); },
   });
 
   return (
