@@ -81,10 +81,10 @@ function ObjectsTab() {
 
   const blockIfOverLimit = (id: string): boolean => {
     if (plan === "super_host") return false;
-    if (activeOthersCount(id) >= 1) {
+    if (activeOthersCount(id) >= 2) {
       toast({
-        title: "Доступно только одно активное размещение",
-        description: "Чтобы разместить больше одного объекта, подключите статус Супер хост — 199 ₽ в месяц.",
+        title: "Доступно не более двух активных размещений",
+        description: "Чтобы разместить больше двух объектов, подключите статус Супер хост — 199 ₽ в месяц.",
         variant: "destructive",
       });
       return true;
