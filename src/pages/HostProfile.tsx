@@ -38,7 +38,7 @@ export default function HostProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, name, avatar_url, city, created_at")
+        .select("user_id, name, avatar_url, city, created_at, host_plan")
         .eq("user_id", id!)
         .maybeSingle();
       if (error) throw error;
