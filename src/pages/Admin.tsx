@@ -164,10 +164,12 @@ function ObjectsTab() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, notes }: { id: string; status: string; notes?: string | null }) => {
+      const patch: any = { object_status: status as any };
+      if (notes !== undefined) patch.reviewer_notes = notes;
       const { error } = await supabase
         .from("host_objects")
-        .update({ object_status: status as any })
+        .update(patch)
         .eq("id", id);
       if (error) throw error;
     },
@@ -214,7 +216,15 @@ function ObjectsTab() {
                 <TableCell className="max-w-[260px] truncate text-sm">{o.city ? `${o.city}, ` : ""}{o.address}</TableCell>
                 <TableCell>{o.storage_slots?.length || 0}</TableCell>
                 <TableCell>
-                  <Select value={o.object_status} onValueChange={(v) => updateStatus.mutate({ id: o.id, status: v })}>
+                  <Select value={o.object_status} onValueChange={(v) => {
+                    if (v === "needs_changes") {
+                      const notes = window.prompt("Что нужно уточнить хосту?", o.reviewer_notes || "");
+                      if (notes === null) return;
+                      updateStatus.mutate({ id: o.id, status: v, notes: notes.trim() || null });
+                    } else {
+                      updateStatus.mutate({ id: o.id, status: v });
+                    }
+                  }}>
                     <SelectTrigger className="w-[160px]">
                       <SelectValue />
                     </SelectTrigger>
