@@ -153,7 +153,7 @@ export default function Auth() {
       toast({ title: "Ошибка", description: (data as any)?.error || error?.message || "Не удалось инициировать проверку", variant: "destructive" });
       return;
     }
-    const form: SignupForm = parsed.data;
+    const form: SignupForm = { ...parsed.data, phone: parsed.data.phone as string };
     const sessionToken = (data as any).session_token;
     const callPhone = (data as any).call_phone;
     const callPhonePretty = (data as any).call_phone_pretty || callPhone;
