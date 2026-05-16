@@ -428,6 +428,51 @@ export type Database = {
         }
         Relationships: []
       }
+      object_documents: {
+        Row: {
+          created_at: string
+          document_type: string
+          external_job_id: string | null
+          external_result: Json | null
+          file_url: string
+          host_user_id: string
+          id: string
+          object_id: string
+          review_comment: string | null
+          status: Database["public"]["Enums"]["object_document_status"]
+          updated_at: string
+          verified_at: string | null
+        }
+        Insert: {
+          created_at?: string
+          document_type: string
+          external_job_id?: string | null
+          external_result?: Json | null
+          file_url: string
+          host_user_id: string
+          id?: string
+          object_id: string
+          review_comment?: string | null
+          status?: Database["public"]["Enums"]["object_document_status"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Update: {
+          created_at?: string
+          document_type?: string
+          external_job_id?: string | null
+          external_result?: Json | null
+          file_url?: string
+          host_user_id?: string
+          id?: string
+          object_id?: string
+          review_comment?: string | null
+          status?: Database["public"]["Enums"]["object_document_status"]
+          updated_at?: string
+          verified_at?: string | null
+        }
+        Relationships: []
+      }
       pending_phone_verifications: {
         Row: {
           attempts: number
@@ -1003,6 +1048,13 @@ export type Database = {
       lot_category: "tires" | "bikes" | "other"
       lot_status: "draft" | "published" | "archived"
       message_type: "text" | "system" | "file"
+      object_document_status:
+        | "uploaded"
+        | "processing"
+        | "approved"
+        | "rejected"
+        | "manual_review"
+        | "error"
       object_status:
         | "draft"
         | "pending_review"
@@ -1221,6 +1273,14 @@ export const Constants = {
       lot_category: ["tires", "bikes", "other"],
       lot_status: ["draft", "published", "archived"],
       message_type: ["text", "system", "file"],
+      object_document_status: [
+        "uploaded",
+        "processing",
+        "approved",
+        "rejected",
+        "manual_review",
+        "error",
+      ],
       object_status: [
         "draft",
         "pending_review",
