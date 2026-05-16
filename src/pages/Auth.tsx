@@ -316,7 +316,7 @@ export default function Auth() {
                   <div>
                     <Label htmlFor="su-password">Пароль</Label>
                     <Input id="su-password" type="password" autoComplete="new-password" value={suPassword} onChange={(e) => setSuPassword(e.target.value)} required minLength={8} />
-                    <p className="text-xs text-muted-foreground mt-1">Минимум 8 символов</p>
+                    <p className="text-xs text-muted-foreground mt-1">Минимум 8 символов, включая буквы, цифры и спецсимвол</p>
                   </div>
                   <Button type="submit" className="w-full" disabled={suBusy}>
                     {suBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
