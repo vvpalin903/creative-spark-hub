@@ -31,7 +31,7 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 export default function Profile() {
-  const { user, signOut, isHost } = useAuth();
+  const { user, signOut, isHost, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +41,7 @@ export default function Profile() {
   const [district, setDistrict] = useState("");
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [newPassword, setNewPassword] = useState("");
+  const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
     if (!user) return;
