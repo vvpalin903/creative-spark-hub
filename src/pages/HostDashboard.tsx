@@ -9,11 +9,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle, EyeOff, Eye, LifeBuoy } from "lucide-react";
+import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle, EyeOff, Eye, LifeBuoy, Crown } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
 import { ReviewButton } from "@/components/reviews/ReviewButton";
 import { TicketsSection } from "@/components/tickets/TicketsSection";
+import { HostPlanSection, useHostPlan } from "@/components/dashboard/HostPlanSection";
 import {
   accessModeLabels,
   bookingRequestStatusColors,
@@ -33,8 +34,10 @@ const sections = [
   { to: "/dashboard/host/messages", label: "Сообщения", icon: MessageCircle },
   { to: "/dashboard/host/history", label: "История", icon: History },
   { to: "/dashboard/host/tickets", label: "Обращения", icon: LifeBuoy },
+  { to: "/dashboard/host/plan", label: "Тариф", icon: Crown },
   { to: "/dashboard/host/verification", label: "Верификация", icon: ShieldCheck },
 ];
+
 
 export default function HostDashboard() {
   return (
