@@ -47,16 +47,33 @@ Deno.serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey);
 
-    // Rate-limit: max 1 request per 60 sec per user
-    const { data: recent } = await admin
+    // Reuse an existing live (pending, non-expired) session for this user+phone
+    // instead of rate-limiting / creating duplicates.
+    const { data: existing } = await admin
       .from("phone_verifications")
-      .select("created_at")
+      .select("*")
       .eq("user_id", userId)
+      .eq("phone", phone)
+      .eq("status", "pending")
+      .gt("expires_at", new Date().toISOString())
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-    if (recent && Date.now() - new Date(recent.created_at).getTime() < 60_000) {
-      return new Response(JSON.stringify({ error: "Подождите перед повторной отправкой кода" }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    if (existing) {
+      // Look up call_phone again via sms.ru status to return to client
+      try {
+        const sp = new URLSearchParams({ api_id: apiId, check_id: String(existing.auth_id), json: "1" });
+        const sr = await fetch(`https://sms.ru/callcheck/status?${sp.toString()}`);
+        const sj = await sr.json().catch(() => ({} as any));
+        const cp = sj?.call_phone ?? null;
+        const cpp = sj?.call_phone_pretty ?? cp;
+        if (cp) {
+          return new Response(JSON.stringify({
+            ok: true, reused: true, phone,
+            call_phone: cp, call_phone_pretty: cpp, expires_at: existing.expires_at,
+          }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+        }
+      } catch (_) { /* fall through to create new */ }
     }
 
     // sms.ru callcheck/add — user will be asked to call this number
