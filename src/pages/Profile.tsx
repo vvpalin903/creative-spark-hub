@@ -122,7 +122,8 @@ export default function Profile() {
             </div>
             <div>
               <Label htmlFor="phone">Телефон</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input id="phone" value={phone} disabled />
+              <p className="text-xs text-muted-foreground mt-1">Для изменения телефона обратитесь в поддержку</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
