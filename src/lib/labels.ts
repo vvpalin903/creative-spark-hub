@@ -131,3 +131,21 @@ export const hostPlanRequestStatusColors: Record<string, string> = {
   cancelled: "bg-muted text-muted-foreground",
 };
 
+
+export const objectDocumentStatusLabels: Record<string, string> = {
+  uploaded: "Загружен",
+  processing: "Проверяется",
+  approved: "Одобрен",
+  rejected: "Отклонён",
+  manual_review: "Ручная проверка",
+  error: "Ошибка",
+};
+
+export const objectDocumentStatusColors: Record<string, string> = {
+  uploaded: "bg-muted text-muted-foreground",
+  processing: "bg-warning/10 text-warning",
+  approved: "bg-primary text-primary-foreground",
+  rejected: "bg-destructive/10 text-destructive",
+  manual_review: "bg-warning/10 text-warning",
+  error: "bg-destructive/10 text-destructive",
+};
