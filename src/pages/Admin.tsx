@@ -18,6 +18,9 @@ import { CreateTicketDialog, TicketDetailDialog } from "@/components/tickets/Tic
 import NotFound from "./NotFound";
 import {
   bookingRequestStatusLabels,
+  hostPlanLabels,
+  hostPlanRequestStatusColors,
+  hostPlanRequestStatusLabels,
   objectStatusColors,
   objectStatusLabels,
   objectVerificationStatusLabels,
@@ -133,6 +136,7 @@ function AdminDashboard({ isRealAdmin }: { isRealAdmin: boolean }) {
             <TabsTrigger value="objects">Объекты</TabsTrigger>
             <TabsTrigger value="requests">Заявки</TabsTrigger>
             <TabsTrigger value="tickets">Обращения</TabsTrigger>
+            <TabsTrigger value="superhost">Супер хост</TabsTrigger>
             <TabsTrigger value="users">Пользователи</TabsTrigger>
             <TabsTrigger value="verification">Документы хостов</TabsTrigger>
             <TabsTrigger value="documents">Сайт-доки</TabsTrigger>
@@ -141,6 +145,7 @@ function AdminDashboard({ isRealAdmin }: { isRealAdmin: boolean }) {
           <TabsContent value="objects"><ObjectsTab /></TabsContent>
           <TabsContent value="requests"><RequestsTab /></TabsContent>
           <TabsContent value="tickets"><TicketsTab /></TabsContent>
+          <TabsContent value="superhost"><SuperHostTab /></TabsContent>
           <TabsContent value="users"><UsersTab isRealAdmin={isRealAdmin} /></TabsContent>
           <TabsContent value="verification"><VerificationDocsTab /></TabsContent>
           <TabsContent value="documents"><DocumentsTab /></TabsContent>
@@ -559,6 +564,99 @@ function TicketsTab() {
         onCreated={() => queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] })}
       />
       <TicketDetailDialog ticket={viewing} onOpenChange={(v) => !v && setViewing(null)} />
+    </div>
+  );
+}
+
+/* -------- Super Host requests -------- */
+function SuperHostTab() {
+  const queryClient = useQueryClient();
+
+  const { data: requests } = useQuery({
+    queryKey: ["admin", "host_plan_requests"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("host_plan_requests")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      const ids = Array.from(new Set((data || []).map((r: any) => r.host_user_id)));
+      let profiles: Record<string, any> = {};
+      if (ids.length) {
+        const { data: ps } = await supabase
+          .from("profiles")
+          .select("user_id, name, email, phone, telegram, host_plan")
+          .in("user_id", ids);
+        profiles = Object.fromEntries((ps || []).map((p: any) => [p.user_id, p]));
+      }
+      return (data || []).map((r: any) => ({ ...r, profile: profiles[r.host_user_id] }));
+    },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase
+        .from("host_plan_requests")
+        .update({ status: status as any })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "host_plan_requests"] });
+      toast({ title: "Статус обновлён" });
+    },
+    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+  });
+
+  return (
+    <div className="rounded-lg border overflow-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Дата</TableHead>
+            <TableHead>Хост</TableHead>
+            <TableHead>Контакты</TableHead>
+            <TableHead>Текущий тариф</TableHead>
+            <TableHead>Комментарий</TableHead>
+            <TableHead>Статус</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {requests?.map((r: any) => (
+            <TableRow key={r.id}>
+              <TableCell className="text-sm whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+              <TableCell>
+                <div className="font-medium">{r.profile?.name || "—"}</div>
+                <div className="text-xs text-muted-foreground">{r.host_user_id.slice(0, 8)}…</div>
+              </TableCell>
+              <TableCell className="text-xs space-y-0.5">
+                <div>{r.contact_email || r.profile?.email || "—"}</div>
+                <div>{r.contact_phone || r.profile?.phone || "—"}</div>
+                <div>TG: {r.contact_telegram || r.profile?.telegram || "—"}</div>
+              </TableCell>
+              <TableCell className="text-sm">{hostPlanLabels[r.profile?.host_plan || "standard"]}</TableCell>
+              <TableCell className="text-xs max-w-[240px] truncate">{r.comment || "—"}</TableCell>
+              <TableCell>
+                <Select value={r.status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(hostPlanRequestStatusLabels).map(([k, v]) => (
+                      <SelectItem key={k} value={k}>{v}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableCell>
+            </TableRow>
+          ))}
+          {(!requests || requests.length === 0) && (
+            <TableRow>
+              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Заявок нет</TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
     </div>
   );
 }

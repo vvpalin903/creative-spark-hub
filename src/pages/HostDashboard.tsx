@@ -9,11 +9,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle, EyeOff, Eye, LifeBuoy } from "lucide-react";
+import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle, EyeOff, Eye, LifeBuoy, Crown } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
 import { ReviewButton } from "@/components/reviews/ReviewButton";
 import { TicketsSection } from "@/components/tickets/TicketsSection";
+import { HostPlanSection, useHostPlan } from "@/components/dashboard/HostPlanSection";
 import {
   accessModeLabels,
   bookingRequestStatusColors,
@@ -33,8 +34,10 @@ const sections = [
   { to: "/dashboard/host/messages", label: "Сообщения", icon: MessageCircle },
   { to: "/dashboard/host/history", label: "История", icon: History },
   { to: "/dashboard/host/tickets", label: "Обращения", icon: LifeBuoy },
+  { to: "/dashboard/host/plan", label: "Тариф", icon: Crown },
   { to: "/dashboard/host/verification", label: "Верификация", icon: ShieldCheck },
 ];
+
 
 export default function HostDashboard() {
   return (
@@ -44,6 +47,7 @@ export default function HostDashboard() {
         <Route path="requests" element={<RequestsTab />} />
         <Route path="history" element={<HistoryTab />} />
         <Route path="tickets" element={<TicketsSection role="host" />} />
+        <Route path="plan" element={<HostPlanSection />} />
         <Route path="verification" element={<VerificationTab />} />
         <Route path="*" element={<Navigate to="/dashboard/host" replace />} />
       </Routes>
@@ -56,6 +60,7 @@ function ObjectsTab() {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Tables<"host_objects"> | null>(null);
   const queryClient = useQueryClient();
+  const { plan } = useHostPlan();
 
   const { data: objects, isLoading } = useQuery({
     queryKey: ["host", "objects", user?.id],
@@ -71,8 +76,25 @@ function ObjectsTab() {
     enabled: !!user,
   });
 
+  const activeOthersCount = (id: string) =>
+    (objects || []).filter((o: any) => o.id !== id && !["draft", "archived"].includes(o.object_status)).length;
+
+  const blockIfOverLimit = (id: string): boolean => {
+    if (plan === "super_host") return false;
+    if (activeOthersCount(id) >= 1) {
+      toast({
+        title: "Доступно только одно активное размещение",
+        description: "Чтобы разместить больше одного объекта, подключите статус Супер хост — 199 ₽ в месяц.",
+        variant: "destructive",
+      });
+      return true;
+    }
+    return false;
+  };
+
   const submitForReview = useMutation({
     mutationFn: async (id: string) => {
+      if (blockIfOverLimit(id)) throw new Error("limit");
       const { error } = await supabase
         .from("host_objects")
         .update({ object_status: "pending_review", verification_status: "pending" })
@@ -83,10 +105,12 @@ function ObjectsTab() {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
       toast({ title: "Объект отправлен на публикацию" });
     },
+    onError: (e: any) => { if (e?.message !== "limit") toast({ title: "Ошибка", description: e.message, variant: "destructive" }); },
   });
 
   const toggleHidden = useMutation({
     mutationFn: async ({ id, hide }: { id: string; hide: boolean }) => {
+      if (!hide && blockIfOverLimit(id)) throw new Error("limit");
       const { error } = await supabase
         .from("host_objects")
         .update({ object_status: hide ? "hidden" : "published" })
@@ -97,6 +121,7 @@ function ObjectsTab() {
       queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
       toast({ title: "Статус обновлён" });
     },
+    onError: (e: any) => { if (e?.message !== "limit") toast({ title: "Ошибка", description: e.message, variant: "destructive" }); },
   });
 
   return (
