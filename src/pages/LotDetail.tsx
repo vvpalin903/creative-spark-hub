@@ -228,6 +228,7 @@ export default function LotDetail() {
                     </Link>
                   )}
                   <HostRating hostUserId={object.host_user_id} />
+                  <SuperHostBadge plan={hostProfile?.host_plan} />
                 </div>
               )}
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
