@@ -19,6 +19,7 @@ import {
   storageCategoryLabels,
 } from "@/lib/labels";
 import { HostRating } from "@/components/reviews/HostRating";
+import { SuperHostBadge } from "@/components/SuperHostBadge";
 import { AcceptanceCheckboxes } from "@/components/legal/AcceptanceCheckboxes";
 import { logAcceptances } from "@/lib/logAcceptance";
 
