@@ -124,7 +124,7 @@ function ObjectsTab() {
     onError: (e: any) => { if (e?.message !== "limit") toast({ title: "Ошибка", description: e.message, variant: "destructive" }); },
   });
 
-  const totalCount = (objects || []).filter((o: any) => o.object_status !== "archived").length;
+  const totalCount = (objects || []).length;
   const atLimit = plan !== "super_host" && totalCount >= 2;
 
   const handleNew = () => {
