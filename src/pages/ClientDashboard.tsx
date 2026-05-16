@@ -7,16 +7,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Inbox, History, ShieldCheck, Search, MessageCircle } from "lucide-react";
+import { Inbox, History, ShieldCheck, Search, MessageCircle, LifeBuoy } from "lucide-react";
 import { bookingRequestStatusColors, bookingRequestStatusLabels, placementStatusLabels } from "@/lib/labels";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
 import { CancelRequestButton } from "@/components/CancelRequestButton";
 import { ReviewButton } from "@/components/reviews/ReviewButton";
+import { TicketsSection } from "@/components/tickets/TicketsSection";
 
 const sections = [
   { to: "/dashboard/client", label: "Активные", icon: Inbox },
   { to: "/dashboard/client/messages", label: "Сообщения", icon: MessageCircle },
   { to: "/dashboard/client/history", label: "История", icon: History },
+  { to: "/dashboard/client/tickets", label: "Обращения", icon: LifeBuoy },
   { to: "/dashboard/client/verification", label: "Верификация", icon: ShieldCheck },
 ];
 
@@ -26,6 +28,7 @@ export default function ClientDashboard() {
       <Routes>
         <Route index element={<ActiveTab />} />
         <Route path="history" element={<HistoryTab />} />
+        <Route path="tickets" element={<TicketsSection role="client" />} />
         <Route path="verification" element={<VerificationTab />} />
         <Route path="*" element={<Navigate to="/dashboard/client" replace />} />
       </Routes>
