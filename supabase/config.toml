@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.send-password-reset]
 verify_jwt = false
+
+[functions.documents-verification-webhook]
+verify_jwt = false
