@@ -164,10 +164,12 @@ function ObjectsTab() {
   });
 
   const updateStatus = useMutation({
-    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+    mutationFn: async ({ id, status, notes }: { id: string; status: string; notes?: string | null }) => {
+      const patch: any = { object_status: status as any };
+      if (notes !== undefined) patch.reviewer_notes = notes;
       const { error } = await supabase
         .from("host_objects")
-        .update({ object_status: status as any })
+        .update(patch)
         .eq("id", id);
       if (error) throw error;
     },
