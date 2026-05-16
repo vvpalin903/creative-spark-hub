@@ -64,7 +64,7 @@ export default function Profile() {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("profiles").update({
-      name, phone, city, district, notification_prefs: prefs as any,
+      name, city, district, notification_prefs: prefs as any,
     }).eq("user_id", user.id);
     setSaving(false);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
@@ -79,6 +79,17 @@ export default function Profile() {
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
     setNewPassword("");
     toast({ title: "Пароль обновлён" });
+  };
+
+  const sendPasswordResetEmail = async () => {
+    if (!user?.email) return;
+    setSendingReset(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSendingReset(false);
+    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Письмо отправлено", description: `Ссылка для смены пароля отправлена на ${user.email}` });
   };
 
   const deleteAccount = async () => {
