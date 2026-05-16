@@ -10,14 +10,9 @@ export function normalizePhoneInput(raw: string): string | null {
 }
 
 export const emailSchema = z.string().trim().email("Некорректный email").max(255);
-export const phoneSchema = z.string().trim().regex(phoneRegex, "Неверный формат телефона").transform((value, ctx) => {
-  const phone = normalizePhoneInput(value);
-  if (!phone) {
-    ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Неверный формат телефона" });
-    return z.NEVER;
-  }
-  return phone;
-});
+export const phoneSchema = z.string().trim().regex(phoneRegex, "Неверный формат телефона")
+  .refine((value) => !!normalizePhoneInput(value), "Неверный формат телефона")
+  .transform((value) => normalizePhoneInput(value)!);
 export const passwordSchema = z
   .string()
   .min(8, "Минимум 8 символов")
