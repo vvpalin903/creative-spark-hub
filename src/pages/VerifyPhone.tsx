@@ -9,6 +9,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Phone, ShieldCheck } from "lucide-react";
+import { normalizePhoneInput } from "@/lib/validation";
 
 export default function VerifyPhone() {
   const navigate = useNavigate();
@@ -30,8 +31,8 @@ export default function VerifyPhone() {
   }, [loading, session, navigate]);
 
   useEffect(() => {
-    if (phoneVerified) navigate(next, { replace: true });
-  }, [phoneVerified, navigate, next]);
+    if (!loading && session && (phoneVerified || params.has("next"))) navigate(next, { replace: true });
+  }, [loading, session, phoneVerified, params, navigate, next]);
 
   useEffect(() => {
     if (user) {
@@ -79,12 +80,14 @@ export default function VerifyPhone() {
   };
 
   const sendCode = async () => {
-    if (!phone || phone.replace(/\D/g, "").length < 10) {
+    const normalizedPhone = normalizePhoneInput(phone);
+    if (!normalizedPhone) {
       toast({ title: "Введите телефон", description: "Не менее 10 цифр", variant: "destructive" });
       return;
     }
+    setPhone(normalizedPhone);
     setBusy(true);
-    const { data, error } = await supabase.functions.invoke("phone-otp-send", { body: { phone } });
+    const { data, error } = await supabase.functions.invoke("phone-otp-send", { body: { phone: normalizedPhone } });
     setBusy(false);
     if (error || (data as any)?.error) {
       toast({ title: "Ошибка", description: (data as any)?.error || error?.message || "Не удалось инициировать проверку", variant: "destructive" });

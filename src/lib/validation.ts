@@ -2,8 +2,17 @@ import { z } from "zod";
 
 export const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
 
+export function normalizePhoneInput(raw: string): string | null {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (digits.length < 10 || digits.length > 15) return null;
+  if (digits.length === 11 && digits.startsWith("8")) return `7${digits.slice(1)}`;
+  return digits;
+}
+
 export const emailSchema = z.string().trim().email("Некорректный email").max(255);
-export const phoneSchema = z.string().trim().regex(phoneRegex, "Неверный формат телефона");
+export const phoneSchema = z.string().trim().regex(phoneRegex, "Неверный формат телефона")
+  .refine((value) => !!normalizePhoneInput(value), "Неверный формат телефона")
+  .transform((value) => normalizePhoneInput(value)!);
 export const passwordSchema = z
   .string()
   .min(8, "Минимум 8 символов")
