@@ -152,6 +152,13 @@ export default function HostObjectDetail() {
               </div>
             </div>
 
+            {object.object_status === "needs_changes" && object.reviewer_notes && (
+              <div className="rounded border border-destructive/40 bg-destructive/5 p-3 text-sm">
+                <p className="font-medium text-destructive mb-1">Комментарий модератора</p>
+                <p className="whitespace-pre-wrap text-foreground">{object.reviewer_notes}</p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <Info label="Доступ" value={accessModeLabels[object.access_mode]} />
               <Info label="Расписание" value={scheduleModeLabels[object.schedule_mode]} />
