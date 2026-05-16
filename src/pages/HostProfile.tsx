@@ -152,7 +152,10 @@ export default function HostProfile() {
                 <AvatarFallback className="text-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-foreground">{profile.name || "Без имени"}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl font-bold text-foreground">{profile.name || "Без имени"}</h1>
+                  <SuperHostBadge plan={(profile as any).host_plan} />
+                </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
                   {profile.city && (
                     <span className="inline-flex items-center gap-1">
