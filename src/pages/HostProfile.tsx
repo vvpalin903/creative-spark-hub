@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { LotCard, type LotCardObject } from "@/components/LotCard";
 import { HostRating } from "@/components/reviews/HostRating";
+import { SuperHostBadge } from "@/components/SuperHostBadge";
 import { Loader2, MapPin, Calendar, Package, CheckCircle2, Star } from "lucide-react";
 
 function pluralReviews(n: number): string {
@@ -37,7 +38,7 @@ export default function HostProfile() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("user_id, name, avatar_url, city, created_at")
+        .select("user_id, name, avatar_url, city, created_at, host_plan")
         .eq("user_id", id!)
         .maybeSingle();
       if (error) throw error;
@@ -151,7 +152,10 @@ export default function HostProfile() {
                 <AvatarFallback className="text-lg">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl font-bold text-foreground">{profile.name || "Без имени"}</h1>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h1 className="text-2xl font-bold text-foreground">{profile.name || "Без имени"}</h1>
+                  <SuperHostBadge plan={(profile as any).host_plan} />
+                </div>
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-sm text-muted-foreground">
                   {profile.city && (
                     <span className="inline-flex items-center gap-1">

@@ -19,6 +19,7 @@ import {
   storageCategoryLabels,
 } from "@/lib/labels";
 import { HostRating } from "@/components/reviews/HostRating";
+import { SuperHostBadge } from "@/components/SuperHostBadge";
 import { AcceptanceCheckboxes } from "@/components/legal/AcceptanceCheckboxes";
 import { logAcceptances } from "@/lib/logAcceptance";
 
@@ -49,7 +50,7 @@ export default function LotDetail() {
     queryFn: async () => {
       const { data } = await supabase
         .from("profiles")
-        .select("name")
+        .select("name, host_plan")
         .eq("user_id", object!.host_user_id!)
         .maybeSingle();
       return data;
@@ -228,6 +229,7 @@ export default function LotDetail() {
                     </Link>
                   )}
                   <HostRating hostUserId={object.host_user_id} />
+                  <SuperHostBadge plan={hostProfile?.host_plan} />
                 </div>
               )}
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
