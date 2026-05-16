@@ -31,7 +31,7 @@ const DEFAULT_PREFS: Prefs = {
 };
 
 export default function Profile() {
-  const { user, signOut, isHost } = useAuth();
+  const { user, signOut, isHost, isAdmin } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +41,7 @@ export default function Profile() {
   const [district, setDistrict] = useState("");
   const [prefs, setPrefs] = useState<Prefs>(DEFAULT_PREFS);
   const [newPassword, setNewPassword] = useState("");
+  const [sendingReset, setSendingReset] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -63,7 +64,7 @@ export default function Profile() {
     if (!user) return;
     setSaving(true);
     const { error } = await supabase.from("profiles").update({
-      name, phone, city, district, notification_prefs: prefs as any,
+      name, city, district, notification_prefs: prefs as any,
     }).eq("user_id", user.id);
     setSaving(false);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
@@ -78,6 +79,17 @@ export default function Profile() {
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
     setNewPassword("");
     toast({ title: "Пароль обновлён" });
+  };
+
+  const sendPasswordResetEmail = async () => {
+    if (!user?.email) return;
+    setSendingReset(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setSendingReset(false);
+    if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
+    toast({ title: "Письмо отправлено", description: `Ссылка для смены пароля отправлена на ${user.email}` });
   };
 
   const deleteAccount = async () => {
@@ -110,7 +122,8 @@ export default function Profile() {
             </div>
             <div>
               <Label htmlFor="phone">Телефон</Label>
-              <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+              <Input id="phone" value={phone} disabled />
+              <p className="text-xs text-muted-foreground mt-1">Для изменения телефона обратитесь в поддержку</p>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -154,9 +167,23 @@ export default function Profile() {
         <Card>
           <CardHeader><CardTitle>Смена пароля</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <Input type="password" placeholder="Новый пароль" value={newPassword}
-              onChange={(e) => setNewPassword(e.target.value)} minLength={8} />
-            <Button variant="outline" onClick={changePassword} disabled={!newPassword}>Обновить пароль</Button>
+            {isAdmin ? (
+              <>
+                <Input type="password" placeholder="Новый пароль" value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)} minLength={8} />
+                <Button variant="outline" onClick={changePassword} disabled={!newPassword}>Обновить пароль</Button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  Мы отправим письмо со ссылкой для смены пароля на {user?.email}.
+                </p>
+                <Button variant="outline" onClick={sendPasswordResetEmail} disabled={sendingReset || !user?.email}>
+                  {sendingReset && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                  Отправить ссылку для смены пароля
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 
