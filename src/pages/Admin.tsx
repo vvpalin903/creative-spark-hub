@@ -460,3 +460,105 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
     </div>
   );
 }
+
+/* -------- Tickets -------- */
+function TicketsTab() {
+  const queryClient = useQueryClient();
+  const [createOpen, setCreateOpen] = useState(false);
+  const [viewing, setViewing] = useState<any | null>(null);
+
+  const { data: tickets } = useQuery({
+    queryKey: ["admin", "tickets"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("tickets")
+        .select("*, host_objects(title), placements(id)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      // load initiator names
+      const ids = Array.from(new Set((data || []).map((t: any) => t.initiator_user_id).filter(Boolean)));
+      let names: Record<string, { name: string | null; email: string | null }> = {};
+      if (ids.length) {
+        const { data: profiles } = await supabase.from("profiles").select("user_id, name, email").in("user_id", ids);
+        names = Object.fromEntries((profiles || []).map((p) => [p.user_id, { name: p.name, email: p.email }]));
+      }
+      return (data || []).map((t: any) => ({ ...t, initiator: names[t.initiator_user_id] }));
+    },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("tickets").update({ status: status as any }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] });
+      toast({ title: "Статус обновлён" });
+    },
+  });
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => setCreateOpen(true)}>
+          <Plus className="h-4 w-4 mr-1" /> Новое обращение
+        </Button>
+      </div>
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Дата</TableHead>
+              <TableHead>Тема</TableHead>
+              <TableHead>Инициатор</TableHead>
+              <TableHead>Объект</TableHead>
+              <TableHead>Размещение</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {tickets?.map((t: any) => (
+              <TableRow key={t.id}>
+                <TableCell className="text-sm">{new Date(t.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell className="max-w-[240px] truncate font-medium">{t.subject}</TableCell>
+                <TableCell className="text-xs">
+                  <div>{t.initiator?.name || "—"}</div>
+                  <div className="text-muted-foreground">{t.initiator?.email}</div>
+                </TableCell>
+                <TableCell className="text-xs max-w-[180px] truncate">{t.host_objects?.title || "—"}</TableCell>
+                <TableCell className="text-xs">{t.placements?.id ? t.placements.id.slice(0, 8) + "…" : "—"}</TableCell>
+                <TableCell>
+                  <Select value={t.status} onValueChange={(v) => updateStatus.mutate({ id: t.id, status: v })}>
+                    <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ticketStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+                <TableCell>
+                  <Button variant="ghost" size="sm" onClick={() => setViewing(t)}>Открыть</Button>
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!tickets || tickets.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет обращений</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
+      <CreateTicketDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        role="admin"
+        onCreated={() => queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] })}
+      />
+      <TicketDetailDialog ticket={viewing} onOpenChange={(v) => !v && setViewing(null)} />
+    </div>
+  );
+}
