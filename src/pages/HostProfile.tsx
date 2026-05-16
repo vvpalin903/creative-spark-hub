@@ -8,6 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { LotCard, type LotCardObject } from "@/components/LotCard";
 import { HostRating } from "@/components/reviews/HostRating";
+import { SuperHostBadge } from "@/components/SuperHostBadge";
 import { Loader2, MapPin, Calendar, Package, CheckCircle2, Star } from "lucide-react";
 
 function pluralReviews(n: number): string {
