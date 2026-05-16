@@ -727,6 +727,60 @@ export type Database = {
           },
         ]
       }
+      tickets: {
+        Row: {
+          body: string
+          created_at: string
+          created_by_user_id: string
+          id: string
+          initiator_user_id: string
+          object_id: string | null
+          placement_id: string | null
+          status: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          created_by_user_id: string
+          id?: string
+          initiator_user_id: string
+          object_id?: string | null
+          placement_id?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          created_by_user_id?: string
+          id?: string
+          initiator_user_id?: string
+          object_id?: string | null
+          placement_id?: string | null
+          status?: Database["public"]["Enums"]["ticket_status"]
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tickets_object_id_fkey"
+            columns: ["object_id"]
+            isOneToOne: false
+            referencedRelation: "host_objects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_placement_id_fkey"
+            columns: ["placement_id"]
+            isOneToOne: false
+            referencedRelation: "placements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -925,6 +979,7 @@ export type Database = {
         | "sport"
         | "seasonal"
         | "other"
+      ticket_status: "new" | "in_progress" | "closed"
       user_verification_status:
         | "unverified"
         | "pending"
@@ -1139,6 +1194,7 @@ export const Constants = {
         "seasonal",
         "other",
       ],
+      ticket_status: ["new", "in_progress", "closed"],
       user_verification_status: [
         "unverified",
         "pending",
