@@ -4,7 +4,13 @@ export const phoneRegex = /^\+?[0-9\s\-()]{7,20}$/;
 
 export const emailSchema = z.string().trim().email("Некорректный email").max(255);
 export const phoneSchema = z.string().trim().regex(phoneRegex, "Неверный формат телефона");
-export const passwordSchema = z.string().min(8, "Минимум 8 символов").max(72);
+export const passwordSchema = z
+  .string()
+  .min(8, "Минимум 8 символов")
+  .max(72)
+  .regex(/[a-zA-Zа-яА-Я]/, "Пароль должен содержать буквы")
+  .regex(/[0-9]/, "Пароль должен содержать цифры")
+  .regex(/[^a-zA-Z0-9а-яА-Я]/, "Пароль должен содержать спецсимвол (например, !@#$)");
 export const nameSchema = z.string().trim().min(2, "Минимум 2 символа").max(100);
 
 export const signUpSchema = z.object({
