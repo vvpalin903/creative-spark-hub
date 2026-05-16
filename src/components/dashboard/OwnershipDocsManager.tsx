@@ -75,6 +75,20 @@ export function OwnershipDocsManager({ objectId }: Props) {
           toast({ title: "Ошибка", description: insErr.message, variant: "destructive" });
         }
       }
+      // If the object was in "needs_changes", auto-resubmit it for review
+      const { data: obj } = await supabase
+        .from("host_objects")
+        .select("object_status")
+        .eq("id", objectId)
+        .maybeSingle();
+      if (obj?.object_status === "needs_changes" || obj?.object_status === "draft") {
+        await supabase
+          .from("host_objects")
+          .update({ object_status: "pending_review", verification_status: "pending" })
+          .eq("id", objectId);
+        queryClient.invalidateQueries({ queryKey: ["host", "object", objectId] });
+        queryClient.invalidateQueries({ queryKey: ["host", "objects"] });
+      }
       refresh();
       toast({ title: "Документ загружен", description: "Отправлен модератору на проверку" });
     } finally {
