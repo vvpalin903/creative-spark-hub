@@ -428,23 +428,18 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
                 <TableCell className="text-sm">{p.phone || "—"}</TableCell>
                 <TableCell className="text-xs">
                   <div className="flex gap-1 flex-wrap">
-                    {ALL_ROLES.map((r) => {
-                      const has = userRoles.includes(r);
-                      const disabled = r === "admin" && !isRealAdmin;
-                      return (
-                        <button
+                    {userRoles.length === 0 ? (
+                      <span className="text-muted-foreground">—</span>
+                    ) : (
+                      userRoles.map((r) => (
+                        <span
                           key={r}
-                          disabled={disabled || toggleRole.isPending}
-                          onClick={() => toggleRole.mutate({ userId: p.user_id, role: r, has })}
-                          className={`px-2 py-0.5 rounded border text-xs transition-colors ${
-                            has ? "bg-primary text-primary-foreground border-primary" : "bg-muted text-muted-foreground border-border hover:bg-accent"
-                          } ${disabled ? "opacity-40 cursor-not-allowed" : "cursor-pointer"}`}
-                          title={disabled ? "Только администратор" : has ? "Снять роль" : "Выдать роль"}
+                          className="px-2 py-0.5 rounded border text-xs bg-muted text-muted-foreground border-border"
                         >
                           {r}
-                        </button>
-                      );
-                    })}
+                        </span>
+                      ))
+                    )}
                   </div>
                 </TableCell>
                 <TableCell>
