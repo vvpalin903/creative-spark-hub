@@ -21,6 +21,8 @@ import {
   hostPlanLabels,
   hostPlanRequestStatusColors,
   hostPlanRequestStatusLabels,
+  objectDocumentStatusColors,
+  objectDocumentStatusLabels,
   objectStatusColors,
   objectStatusLabels,
   objectVerificationStatusLabels,
