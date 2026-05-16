@@ -657,3 +657,161 @@ function SuperHostTab() {
     </div>
   );
 }
+
+/* -------- Object documents (external verification) -------- */
+function ObjectDocsTab() {
+  const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<string>("all");
+
+  const { data: docs } = useQuery({
+    queryKey: ["admin", "object_documents", filter],
+    queryFn: async () => {
+      let q = supabase
+        .from("object_documents")
+        .select("*, host_objects(title, address)")
+        .order("created_at", { ascending: false });
+      if (filter !== "all") q = q.eq("status", filter as any);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const updateStatus = useMutation({
+    mutationFn: async ({ id, status, comment }: { id: string; status: string; comment?: string }) => {
+      const patch: any = { status };
+      if (comment !== undefined) patch.review_comment = comment;
+      if (status === "approved" || status === "rejected") patch.verified_at = new Date().toISOString();
+      const { error } = await supabase.from("object_documents").update(patch).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "object_documents"] });
+      toast({ title: "Статус обновлён" });
+    },
+    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+  });
+
+  const dispatch = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.functions.invoke("documents-process", { body: { document_id: id } });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "object_documents"] });
+      toast({ title: "Документ отправлен на проверку" });
+    },
+    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+  });
+
+  const manualReview = (docs || []).filter((d: any) => d.status === "manual_review");
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-muted-foreground">Фильтр:</span>
+          <Select value={filter} onValueChange={setFilter}>
+            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Все</SelectItem>
+              {Object.entries(objectDocumentStatusLabels).map(([k, v]) => (
+                <SelectItem key={k} value={k}>{v}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <p className="text-xs text-muted-foreground">{docs?.length || 0} записей</p>
+      </div>
+
+      {manualReview.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Требуют ручной проверки ({manualReview.length})</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {manualReview.map((d: any) => (
+              <ObjectDocRow key={d.id} d={d} onUpdate={(status, comment) => updateStatus.mutate({ id: d.id, status, comment })} onDispatch={() => dispatch.mutate(d.id)} highlight />
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Дата</TableHead>
+              <TableHead>Объект</TableHead>
+              <TableHead>Тип</TableHead>
+              <TableHead>Статус</TableHead>
+              <TableHead>External job</TableHead>
+              <TableHead>Файл</TableHead>
+              <TableHead>Действия</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {docs?.map((d: any) => (
+              <TableRow key={d.id}>
+                <TableCell className="text-xs whitespace-nowrap">{new Date(d.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell className="text-sm max-w-[220px] truncate">{d.host_objects?.title || d.object_id.slice(0, 8) + "…"}</TableCell>
+                <TableCell className="text-xs">{d.document_type}</TableCell>
+                <TableCell>
+                  <span className={`text-xs px-2 py-1 rounded ${objectDocumentStatusColors[d.status]}`}>
+                    {objectDocumentStatusLabels[d.status]}
+                  </span>
+                </TableCell>
+                <TableCell className="text-xs font-mono">{d.external_job_id ? d.external_job_id.slice(0, 14) + "…" : "—"}</TableCell>
+                <TableCell className="text-xs">
+                  {d.file_url ? <a className="text-primary hover:underline" href={d.file_url} target="_blank" rel="noreferrer">открыть</a> : "—"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex gap-1 flex-wrap">
+                    {(d.status === "uploaded" || d.status === "error") && (
+                      <Button size="sm" variant="outline" onClick={() => dispatch.mutate(d.id)}>Отправить</Button>
+                    )}
+                    <Select value={d.status} onValueChange={(v) => updateStatus.mutate({ id: d.id, status: v })}>
+                      <SelectTrigger className="w-[140px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(objectDocumentStatusLabels).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ))}
+            {(!docs || docs.length === 0) && (
+              <TableRow>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Документов нет</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}
+
+function ObjectDocRow({ d, onUpdate, onDispatch, highlight }: { d: any; onUpdate: (status: string, comment?: string) => void; onDispatch: () => void; highlight?: boolean }) {
+  const [comment, setComment] = useState(d.review_comment || "");
+  return (
+    <div className={`rounded-md border p-3 ${highlight ? "border-warning/40 bg-warning/5" : ""}`}>
+      <div className="flex items-center justify-between gap-3 flex-wrap mb-2">
+        <div className="text-sm font-medium">{d.host_objects?.title || d.object_id.slice(0, 8)}</div>
+        <span className={`text-xs px-2 py-0.5 rounded ${objectDocumentStatusColors[d.status]}`}>
+          {objectDocumentStatusLabels[d.status]}
+        </span>
+      </div>
+      <div className="text-xs text-muted-foreground mb-2">Тип: {d.document_type}</div>
+      {d.file_url && <a className="text-xs text-primary hover:underline" href={d.file_url} target="_blank" rel="noreferrer">Открыть файл</a>}
+      <Input className="mt-2" placeholder="Комментарий" value={comment} onChange={(e) => setComment(e.target.value)} />
+      <div className="flex gap-2 mt-2">
+        <Button size="sm" onClick={() => onUpdate("approved", comment)}>Одобрить</Button>
+        <Button size="sm" variant="outline" onClick={() => onUpdate("rejected", comment)}>Отклонить</Button>
+        <Button size="sm" variant="ghost" onClick={onDispatch}>Повторно отправить</Button>
+      </div>
+    </div>
+  );
+}
