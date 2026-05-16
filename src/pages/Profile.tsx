@@ -84,8 +84,11 @@ export default function Profile() {
   const sendPasswordResetEmail = async () => {
     if (!user?.email) return;
     setSendingReset(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+    const { error } = await supabase.functions.invoke("send-password-reset", {
+      body: {
+        email: user.email,
+        redirect_to: `${window.location.origin}/reset-password`,
+      },
     });
     setSendingReset(false);
     if (error) { toast({ title: "Ошибка", description: error.message, variant: "destructive" }); return; }
