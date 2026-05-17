@@ -273,7 +273,20 @@ function RequestsTab() {
   if (isLoading) return <p className="text-sm text-muted-foreground">Загрузка...</p>;
 
   return (
-    <div className="rounded-lg border overflow-auto">
+    <div className="space-y-3">
+      <div className="rounded-lg border bg-muted/40 px-4 py-3 text-sm">
+        Перед подтверждением заявки рекомендуем ознакомиться с{" "}
+        <a
+          href="/docs/recommendations-host"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline font-medium"
+        >
+          рекомендациями для хостов
+        </a>
+        .
+      </div>
+      <div className="rounded-lg border overflow-auto">
       <Table>
         <TableHeader>
           <TableRow>
@@ -367,6 +380,7 @@ function RequestsTab() {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }

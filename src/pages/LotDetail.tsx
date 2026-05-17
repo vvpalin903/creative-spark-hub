@@ -408,6 +408,18 @@ export default function LotDetail() {
                       checked={accepted}
                       onChange={(slug, v) => setAccepted((p) => ({ ...p, [slug]: v }))}
                     />
+                    <p className="text-xs text-muted-foreground">
+                      Перед отправкой заявки советуем ознакомиться с{" "}
+                      <a
+                        href="/docs/recommendations-client"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-primary underline"
+                      >
+                        рекомендациями для клиентов
+                      </a>
+                      .
+                    </p>
                     <Button type="submit" className="w-full" disabled={submit.isPending}>
                       {submit.isPending && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                       Отправить заявку
