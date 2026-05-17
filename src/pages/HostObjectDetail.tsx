@@ -192,18 +192,25 @@ export default function HostObjectDetail() {
         </Card>
 
         <section>
-          <h3 className="text-lg font-semibold mb-3">Документы о праве собственности</h3>
-          <OwnershipDocsManager objectId={object.id} />
-        </section>
-
-        <section>
-          <h3 className="text-lg font-semibold mb-3">Фотографии</h3>
+          <h3 className="text-lg font-semibold mb-1">Фотографии объекта</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Загрузите фотографии помещения — они будут видны клиентам в карточке объекта.
+          </p>
           <PhotosManager objectId={object.id} photos={object.photos || []} />
         </section>
 
         <section>
           <h3 className="text-lg font-semibold mb-3">Слоты хранения</h3>
           <SlotsManager objectId={object.id} />
+        </section>
+
+        <section className="rounded-lg border-2 border-warning/40 bg-warning/5 p-4">
+          <h3 className="text-lg font-semibold mb-1">Документы о праве собственности</h3>
+          <p className="text-xs text-muted-foreground mb-3">
+            Это <strong>не фото объекта</strong>, а документы для модератора (выписка ЕГРН, договор и т.п.).
+            Видны только администраторам сервиса и не публикуются.
+          </p>
+          <OwnershipDocsManager objectId={object.id} />
         </section>
       </div>
 
