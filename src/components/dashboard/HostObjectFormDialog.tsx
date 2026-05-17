@@ -257,8 +257,48 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
 
           {!isEdit && (
             <>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <ImageIcon className="h-4 w-4" /> Фотографии объекта
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Загрузите фото помещения для карточки объекта (до 10 шт, до 5 МБ каждое).
+                  Это <strong>не документы о праве собственности</strong> — их вы загрузите на следующем шаге.
+                </p>
+                {pendingPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {pendingPhotos.map((f, idx) => (
+                      <div key={idx} className="relative aspect-square rounded border overflow-hidden bg-muted">
+                        <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setPendingPhotos((p) => p.filter((_, i) => i !== idx))}
+                          className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground p-1 rounded"
+                          aria-label="Удалить"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {pendingPhotos.length < 10 && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => photoInputRef.current?.click()}>
+                    <Upload className="h-4 w-4 mr-2" /> Добавить фото
+                  </Button>
+                )}
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => addPhotos(e.target.files)}
+                />
+              </div>
+
               <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
-                После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
+                После создания вы попадёте на страницу объекта — там нужно будет загрузить документ о праве собственности и добавить слоты хранения.
               </p>
               <AcceptanceCheckboxes
                 audience="host"
