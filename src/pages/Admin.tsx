@@ -284,6 +284,7 @@ function ObjectsTab() {
         </Table>
       </div>
       {open && <HostObjectFormDialog open={open} onOpenChange={setOpen} object={editing} />}
+      <ObjectReviewDialog open={!!reviewId} onOpenChange={(v) => !v && setReviewId(null)} objectId={reviewId} />
     </div>
   );
 }
