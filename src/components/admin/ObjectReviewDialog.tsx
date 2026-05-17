@@ -1,11 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { FileText, Loader2, Download } from "lucide-react";
+import { Download, Eye, FileText, Loader2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   accessModeLabels,
   objectStatusLabels,
@@ -30,6 +30,18 @@ const docStatusLabels: Record<string, string> = {
 
 export function ObjectReviewDialog({ open, onOpenChange, objectId }: Props) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ id: string; url: string; name: string; type: string } | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (preview?.url) URL.revokeObjectURL(preview.url);
+    };
+  }, [preview?.url]);
+
+  const handleOpenChange = (value: boolean) => {
+    if (!value) setPreview(null);
+    onOpenChange(value);
+  };
 
   const { data: object } = useQuery({
     queryKey: ["admin", "object_review", objectId],
@@ -60,17 +72,21 @@ export function ObjectReviewDialog({ open, onOpenChange, objectId }: Props) {
     enabled: !!objectId && open,
   });
 
-  const downloadDoc = async (doc: { id: string; file_url: string }) => {
+  const getDocPath = (fileUrl: string) => {
+    let path = fileUrl;
+    const idx = path.indexOf(VERIF_PUBLIC_PREFIX);
+    if (idx !== -1) path = path.substring(idx + VERIF_PUBLIC_PREFIX.length);
+    return path;
+  };
+
+  const viewDoc = async (doc: { id: string; file_url: string }) => {
     setLoadingId(doc.id);
     try {
-      let path = doc.file_url;
-      const idx = path.indexOf(VERIF_PUBLIC_PREFIX);
-      if (idx !== -1) path = path.substring(idx + VERIF_PUBLIC_PREFIX.length);
+      const path = getDocPath(doc.file_url);
       const { data: blob, error } = await supabase.storage.from(VERIF_BUCKET).download(path);
       if (error) throw error;
       const blobUrl = URL.createObjectURL(blob);
-      window.open(blobUrl, "_blank");
-      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+      setPreview({ id: doc.id, url: blobUrl, name: path.split("/").pop() || "Документ", type: blob.type });
     } catch (e: any) {
       toast({ title: "Ошибка", description: e.message, variant: "destructive" });
     } finally {
@@ -78,11 +94,22 @@ export function ObjectReviewDialog({ open, onOpenChange, objectId }: Props) {
     }
   };
 
+  const downloadPreview = () => {
+    if (!preview) return;
+    const link = document.createElement("a");
+    link.href = preview.url;
+    link.download = preview.name;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Проверка объекта</DialogTitle>
+          <DialogDescription>Фотографии объекта и документы для модерации.</DialogDescription>
         </DialogHeader>
 
         {!object ? (
