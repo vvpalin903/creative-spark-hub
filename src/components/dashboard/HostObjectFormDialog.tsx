@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X, ImageIcon } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { accessModeLabels, scheduleModeLabels } from "@/lib/labels";
 import type { Tables, Enums } from "@/integrations/supabase/types";
@@ -70,8 +70,28 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     schedule_notes: object?.schedule_notes || "",
   });
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+
+  const addPhotos = (files: FileList | null) => {
+    if (!files) return;
+    const accepted: File[] = [];
+    for (const f of Array.from(files)) {
+      if (!f.type.startsWith("image/")) {
+        toast({ title: `${f.name}: только изображения`, variant: "destructive" });
+        continue;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        toast({ title: `${f.name}: больше 5 МБ`, variant: "destructive" });
+        continue;
+      }
+      accepted.push(f);
+    }
+    setPendingPhotos((p) => [...p, ...accepted].slice(0, 10));
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
@@ -114,6 +134,21 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           .select("id")
           .single();
         if (error) throw error;
+        // Upload pending photos to lot-photos and update host_objects.photos
+        if (pendingPhotos.length > 0) {
+          const uploadedUrls: string[] = [];
+          for (const file of pendingPhotos) {
+            const ext = file.name.split(".").pop() || "jpg";
+            const path = `${user.id}/${data.id}/${crypto.randomUUID()}.${ext}`;
+            const { error: upErr } = await supabase.storage.from("lot-photos").upload(path, file, { upsert: false });
+            if (upErr) continue;
+            const { data: pub } = supabase.storage.from("lot-photos").getPublicUrl(path);
+            uploadedUrls.push(pub.publicUrl);
+          }
+          if (uploadedUrls.length) {
+            await supabase.from("host_objects").update({ photos: uploadedUrls }).eq("id", data.id);
+          }
+        }
         return { id: data.id, created: true };
       }
     },
@@ -133,7 +168,7 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
       toast({
         title: isEdit ? "Объект обновлён" : "Объект создан",
         description: created
-          ? "Загрузите документ о праве собственности на объект — без него публикация невозможна."
+          ? "Следующий шаг — загрузите документ о праве собственности на объект. Без проверки документа публикация невозможна."
           : undefined,
       });
       onOpenChange(false);
@@ -222,8 +257,48 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
 
           {!isEdit && (
             <>
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5">
+                  <ImageIcon className="h-4 w-4" /> Фотографии объекта
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Загрузите фото помещения для карточки объекта (до 10 шт, до 5 МБ каждое).
+                  Это <strong>не документы о праве собственности</strong> — их вы загрузите на следующем шаге.
+                </p>
+                {pendingPhotos.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+                    {pendingPhotos.map((f, idx) => (
+                      <div key={idx} className="relative aspect-square rounded border overflow-hidden bg-muted">
+                        <img src={URL.createObjectURL(f)} alt={f.name} className="w-full h-full object-cover" />
+                        <button
+                          type="button"
+                          onClick={() => setPendingPhotos((p) => p.filter((_, i) => i !== idx))}
+                          className="absolute top-0.5 right-0.5 bg-destructive text-destructive-foreground p-1 rounded"
+                          aria-label="Удалить"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {pendingPhotos.length < 10 && (
+                  <Button type="button" variant="outline" size="sm" onClick={() => photoInputRef.current?.click()}>
+                    <Upload className="h-4 w-4 mr-2" /> Добавить фото
+                  </Button>
+                )}
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => addPhotos(e.target.files)}
+                />
+              </div>
+
               <p className="text-xs text-muted-foreground rounded-lg border border-dashed p-3">
-                После создания вы попадёте на страницу объекта — там можно загрузить фото и добавить слоты хранения.
+                После создания вы попадёте на страницу объекта — там нужно будет загрузить документ о праве собственности и добавить слоты хранения.
               </p>
               <AcceptanceCheckboxes
                 audience="host"

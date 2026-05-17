@@ -10,8 +10,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
-import { Loader2, LogOut, Pencil, Plus } from "lucide-react";
+import { Eye, Loader2, LogOut, Pencil, Plus } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
+import { ObjectReviewDialog } from "@/components/admin/ObjectReviewDialog";
 import { DocumentsTab } from "@/components/admin/DocumentsTab";
 import { VerificationDocsTab } from "@/components/admin/VerificationDocsTab";
 import { CreateTicketDialog, TicketDetailDialog } from "@/components/tickets/TicketsSection";
@@ -164,6 +165,7 @@ function ObjectsTab() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Tables<"host_objects"> | null>(null);
   const [open, setOpen] = useState(false);
+  const [reviewId, setReviewId] = useState<string | null>(null);
 
   const { data: objects } = useQuery({
     queryKey: ["admin", "host_objects"],
@@ -262,9 +264,14 @@ function ObjectsTab() {
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(o); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => setReviewId(o.id)} title="Проверить (фото и документы)">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setEditing(o); setOpen(true); }} title="Редактировать">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
@@ -277,6 +284,7 @@ function ObjectsTab() {
         </Table>
       </div>
       {open && <HostObjectFormDialog open={open} onOpenChange={setOpen} object={editing} />}
+      <ObjectReviewDialog open={!!reviewId} onOpenChange={(v) => !v && setReviewId(null)} objectId={reviewId} />
     </div>
   );
 }
