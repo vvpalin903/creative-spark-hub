@@ -165,6 +165,7 @@ function ObjectsTab() {
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState<Tables<"host_objects"> | null>(null);
   const [open, setOpen] = useState(false);
+  const [reviewId, setReviewId] = useState<string | null>(null);
 
   const { data: objects } = useQuery({
     queryKey: ["admin", "host_objects"],
