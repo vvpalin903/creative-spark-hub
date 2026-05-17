@@ -131,7 +131,22 @@ export default function HostObjectDetail() {
           </Button>
           <div className="flex gap-2 flex-wrap">
             {isDraft && (
-              <Button size="sm" onClick={() => submitForReview.mutate()} disabled={submitForReview.isPending}>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (ownershipDocsCount === 0) {
+                    toast({
+                      title: "Сначала загрузите документ",
+                      description: "Без документа о праве собственности отправить объект на проверку нельзя.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  submitForReview.mutate();
+                }}
+                disabled={submitForReview.isPending || ownershipDocsCount === 0}
+                title={ownershipDocsCount === 0 ? "Загрузите документ о праве собственности" : undefined}
+              >
                 <Send className="h-4 w-4 mr-1" /> Опубликовать
               </Button>
             )}
