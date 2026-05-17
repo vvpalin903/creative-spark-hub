@@ -66,9 +66,11 @@ export function ObjectReviewDialog({ open, onOpenChange, objectId }: Props) {
       let path = doc.file_url;
       const idx = path.indexOf(VERIF_PUBLIC_PREFIX);
       if (idx !== -1) path = path.substring(idx + VERIF_PUBLIC_PREFIX.length);
-      const { data, error } = await supabase.storage.from(VERIF_BUCKET).createSignedUrl(path, 60);
+      const { data: blob, error } = await supabase.storage.from(VERIF_BUCKET).download(path);
       if (error) throw error;
-      window.open(data.signedUrl, "_blank");
+      const blobUrl = URL.createObjectURL(blob);
+      window.open(blobUrl, "_blank");
+      window.setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     } catch (e: any) {
       toast({ title: "Ошибка", description: e.message, variant: "destructive" });
     } finally {
