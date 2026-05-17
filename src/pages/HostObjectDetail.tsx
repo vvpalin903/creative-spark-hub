@@ -45,6 +45,20 @@ export default function HostObjectDetail() {
     enabled: !!id,
   });
 
+  const { data: ownershipDocsCount = 0 } = useQuery({
+    queryKey: ["host", "object", id, "ownership_docs_count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("verification_documents")
+        .select("id", { count: "exact", head: true })
+        .eq("object_id", id!)
+        .eq("document_type", "ownership");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!id,
+  });
+
   const submitForReview = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
@@ -117,7 +131,22 @@ export default function HostObjectDetail() {
           </Button>
           <div className="flex gap-2 flex-wrap">
             {isDraft && (
-              <Button size="sm" onClick={() => submitForReview.mutate()} disabled={submitForReview.isPending}>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (ownershipDocsCount === 0) {
+                    toast({
+                      title: "Сначала загрузите документ",
+                      description: "Без документа о праве собственности отправить объект на проверку нельзя.",
+                      variant: "destructive",
+                    });
+                    return;
+                  }
+                  submitForReview.mutate();
+                }}
+                disabled={submitForReview.isPending || ownershipDocsCount === 0}
+                title={ownershipDocsCount === 0 ? "Загрузите документ о праве собственности" : undefined}
+              >
                 <Send className="h-4 w-4 mr-1" /> Опубликовать
               </Button>
             )}

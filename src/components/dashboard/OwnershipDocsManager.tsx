@@ -42,7 +42,10 @@ export function OwnershipDocsManager({ objectId }: Props) {
     enabled: !!user,
   });
 
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ["ownership_docs", objectId] });
+  const refresh = () => {
+    queryClient.invalidateQueries({ queryKey: ["ownership_docs", objectId] });
+    queryClient.invalidateQueries({ queryKey: ["host", "object", objectId, "ownership_docs_count"] });
+  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || !user) return;
