@@ -380,6 +380,7 @@ function RequestsTab() {
           )}
         </TableBody>
       </Table>
+      </div>
     </div>
   );
 }
