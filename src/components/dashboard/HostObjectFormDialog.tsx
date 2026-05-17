@@ -168,7 +168,7 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
       toast({
         title: isEdit ? "Объект обновлён" : "Объект создан",
         description: created
-          ? "Загрузите документ о праве собственности на объект — без него публикация невозможна."
+          ? "Следующий шаг — загрузите документ о праве собственности на объект. Без проверки документа публикация невозможна."
           : undefined,
       });
       onOpenChange(false);
