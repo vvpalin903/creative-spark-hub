@@ -410,14 +410,14 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
 
   const updateHostPlan = useMutation({
     mutationFn: async ({ userId, plan }: { userId: string; plan: "standard" | "super_host" }) => {
-      const patch: Record<string, any> =
+      const patch =
         plan === "super_host"
           ? {
-              host_plan: "super_host",
+              host_plan: "super_host" as const,
               host_plan_started_at: new Date().toISOString(),
               host_plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
             }
-          : { host_plan: "standard", host_plan_expires_at: null };
+          : { host_plan: "standard" as const, host_plan_expires_at: null };
       const { error } = await supabase.from("profiles").update(patch).eq("user_id", userId);
       if (error) throw error;
     },
