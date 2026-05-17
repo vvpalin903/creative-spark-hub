@@ -70,8 +70,28 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
     schedule_notes: object?.schedule_notes || "",
   });
   const [accepted, setAccepted] = useState<Record<string, boolean>>({});
+  const [pendingPhotos, setPendingPhotos] = useState<File[]>([]);
+  const photoInputRef = useRef<HTMLInputElement>(null);
 
   const set = (k: string, v: any) => setForm((f) => ({ ...f, [k]: v }));
+
+  const addPhotos = (files: FileList | null) => {
+    if (!files) return;
+    const accepted: File[] = [];
+    for (const f of Array.from(files)) {
+      if (!f.type.startsWith("image/")) {
+        toast({ title: `${f.name}: только изображения`, variant: "destructive" });
+        continue;
+      }
+      if (f.size > 5 * 1024 * 1024) {
+        toast({ title: `${f.name}: больше 5 МБ`, variant: "destructive" });
+        continue;
+      }
+      accepted.push(f);
+    }
+    setPendingPhotos((p) => [...p, ...accepted].slice(0, 10));
+    if (photoInputRef.current) photoInputRef.current.value = "";
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
