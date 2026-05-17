@@ -7,7 +7,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { Inbox, History, ShieldCheck, Building2, MessageCircle, Loader2 } from "lucide-react";
+import { Inbox, History, ShieldCheck, Building2, MessageCircle, Loader2, LifeBuoy, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Role = "host" | "client";
@@ -30,12 +30,15 @@ export default function Messages({ role }: Props) {
             { to: "/dashboard/host/requests", label: "Заявки", icon: Inbox },
             { to: "/dashboard/host/messages", label: "Сообщения", icon: MessageCircle },
             { to: "/dashboard/host/history", label: "История", icon: History },
+            { to: "/dashboard/host/tickets", label: "Обращения", icon: LifeBuoy },
+            { to: "/dashboard/host/plan", label: "Тариф", icon: Crown },
             { to: "/dashboard/host/verification", label: "Верификация", icon: ShieldCheck },
           ]
         : [
             { to: "/dashboard/client", label: "Активные", icon: Inbox },
             { to: "/dashboard/client/messages", label: "Сообщения", icon: MessageCircle },
             { to: "/dashboard/client/history", label: "История", icon: History },
+            { to: "/dashboard/client/tickets", label: "Обращения", icon: LifeBuoy },
             { to: "/dashboard/client/verification", label: "Верификация", icon: ShieldCheck },
           ],
     [role]
