@@ -134,6 +134,21 @@ export function HostObjectFormDialog({ open, onOpenChange, object }: Props) {
           .select("id")
           .single();
         if (error) throw error;
+        // Upload pending photos to lot-photos and update host_objects.photos
+        if (pendingPhotos.length > 0) {
+          const uploadedUrls: string[] = [];
+          for (const file of pendingPhotos) {
+            const ext = file.name.split(".").pop() || "jpg";
+            const path = `${user.id}/${data.id}/${crypto.randomUUID()}.${ext}`;
+            const { error: upErr } = await supabase.storage.from("lot-photos").upload(path, file, { upsert: false });
+            if (upErr) continue;
+            const { data: pub } = supabase.storage.from("lot-photos").getPublicUrl(path);
+            uploadedUrls.push(pub.publicUrl);
+          }
+          if (uploadedUrls.length) {
+            await supabase.from("host_objects").update({ photos: uploadedUrls }).eq("id", data.id);
+          }
+        }
         return { id: data.id, created: true };
       }
     },
