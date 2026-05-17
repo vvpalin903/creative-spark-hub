@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Building2, User as UserIcon, Phone, ShieldCheck } from "lucide-react";
 import { signInSchema, signUpSchema } from "@/lib/validation";
+import { checkPasswordPwned } from "@/lib/passwordStrength";
 import { useAuth } from "@/hooks/useAuth";
 
 type SignupForm = {
@@ -147,6 +148,16 @@ export default function Auth() {
       return;
     }
     setSuBusy(true);
+    const pwned = await checkPasswordPwned(parsed.data.password);
+    if (pwned && pwned > 0) {
+      setSuBusy(false);
+      toast({
+        title: "Слабый пароль",
+        description: `Этот пароль встречается в известных утечках (${pwned.toLocaleString("ru-RU")} раз). Придумайте другой — не используйте словарные и часто встречающиеся пароли.`,
+        variant: "destructive",
+      });
+      return;
+    }
     const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: parsed.data.phone } });
     setSuBusy(false);
     if (error || (data as any)?.error) {
