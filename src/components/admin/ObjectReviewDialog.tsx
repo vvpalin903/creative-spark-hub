@@ -176,8 +176,8 @@ export function ObjectReviewDialog({ open, onOpenChange, objectId }: Props) {
                         <Badge variant={d.status === "approved" ? "default" : d.status === "rejected" ? "destructive" : "secondary"}>
                           {docStatusLabels[d.status] || d.status}
                         </Badge>
-                        <Button size="sm" variant="outline" disabled={loadingId === d.id} onClick={() => downloadDoc(d)}>
-                          {loadingId === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
+                        <Button size="sm" variant="outline" disabled={loadingId === d.id} onClick={() => viewDoc(d)}>
+                          {loadingId === d.id ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
                         </Button>
                       </div>
                     </div>
@@ -187,6 +187,30 @@ export function ObjectReviewDialog({ open, onOpenChange, objectId }: Props) {
                 <p className="text-sm text-muted-foreground">Документы не загружены.</p>
               )}
             </section>
+
+            {preview && (
+              <section className="space-y-3 rounded border bg-muted/30 p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <h4 className="font-semibold">Просмотр документа</h4>
+                    <p className="truncate text-xs text-muted-foreground">{preview.name}</p>
+                  </div>
+                  <Button size="sm" variant="outline" onClick={downloadPreview}>
+                    <Download className="mr-1 h-3.5 w-3.5" />
+                    Скачать
+                  </Button>
+                </div>
+                {preview.type.startsWith("image/") ? (
+                  <img src={preview.url} alt="Документ о праве собственности" className="max-h-[70vh] w-full rounded border object-contain bg-background" />
+                ) : preview.type === "application/pdf" ? (
+                  <iframe src={preview.url} title="Документ о праве собственности" className="h-[70vh] w-full rounded border bg-background" />
+                ) : (
+                  <p className="rounded border bg-background p-4 text-sm text-muted-foreground">
+                    Предпросмотр этого формата недоступен. Скачайте файл для просмотра.
+                  </p>
+                )}
+              </section>
+            )}
           </div>
         )}
       </DialogContent>
