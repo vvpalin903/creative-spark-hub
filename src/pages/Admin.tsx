@@ -264,9 +264,14 @@ function ObjectsTab() {
                   </Select>
                 </TableCell>
                 <TableCell>
-                  <Button variant="ghost" size="sm" onClick={() => { setEditing(o); setOpen(true); }}>
-                    <Pencil className="h-4 w-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => setReviewId(o.id)} title="Проверить (фото и документы)">
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => { setEditing(o); setOpen(true); }} title="Редактировать">
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))}
