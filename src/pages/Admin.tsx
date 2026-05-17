@@ -408,6 +408,26 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
     onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
   });
 
+  const updateHostPlan = useMutation({
+    mutationFn: async ({ userId, plan }: { userId: string; plan: "standard" | "super_host" }) => {
+      const patch: Record<string, any> =
+        plan === "super_host"
+          ? {
+              host_plan: "super_host",
+              host_plan_started_at: new Date().toISOString(),
+              host_plan_expires_at: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            }
+          : { host_plan: "standard", host_plan_expires_at: null };
+      const { error } = await supabase.from("profiles").update(patch).eq("user_id", userId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "profiles"] });
+      toast({ title: "Тариф хоста обновлён" });
+    },
+    onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
+  });
+
   return (
     <div className="rounded-lg border overflow-auto">
       <Table>
@@ -418,12 +438,14 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
             <TableHead>Email</TableHead>
             <TableHead>Телефон</TableHead>
             <TableHead>Роли</TableHead>
+            <TableHead>Тариф хоста</TableHead>
             <TableHead>Верификация</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {profiles?.map((p) => {
             const userRoles = rolesByUser[p.user_id] || [];
+            const isHost = userRoles.includes("host" as Enums<"app_role">);
             return (
               <TableRow key={p.id}>
                 <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
@@ -447,6 +469,26 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
                   </div>
                 </TableCell>
                 <TableCell>
+                  {isHost ? (
+                    <Select
+                      value={(p as any).host_plan || "standard"}
+                      onValueChange={(v) => updateHostPlan.mutate({ userId: p.user_id, plan: v as any })}
+                      disabled={updateHostPlan.isPending}
+                    >
+                      <SelectTrigger className="w-[150px] h-8 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(hostPlanLabels).map(([k, v]) => (
+                          <SelectItem key={k} value={k}>{v}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                <TableCell>
                   <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
                     {userVerificationStatusLabels[p.verification_status]}
                   </span>
@@ -456,7 +498,7 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
           })}
           {(!profiles || profiles.length === 0) && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
+              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
             </TableRow>
           )}
         </TableBody>
