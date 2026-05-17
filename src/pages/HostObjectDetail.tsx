@@ -45,6 +45,20 @@ export default function HostObjectDetail() {
     enabled: !!id,
   });
 
+  const { data: ownershipDocsCount = 0 } = useQuery({
+    queryKey: ["host", "object", id, "ownership_docs_count"],
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("verification_documents")
+        .select("id", { count: "exact", head: true })
+        .eq("object_id", id!)
+        .eq("document_type", "ownership");
+      if (error) throw error;
+      return count || 0;
+    },
+    enabled: !!id,
+  });
+
   const submitForReview = useMutation({
     mutationFn: async () => {
       const { error } = await supabase
