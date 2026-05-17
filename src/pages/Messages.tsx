@@ -7,7 +7,7 @@ import { DashboardLayout } from "@/components/dashboard/DashboardLayout";
 import { Card } from "@/components/ui/card";
 import { ChatPanel } from "@/components/chat/ChatPanel";
 import { useUnreadMessages } from "@/hooks/useUnreadMessages";
-import { Inbox, History, ShieldCheck, Building2, MessageCircle, Loader2 } from "lucide-react";
+import { Inbox, History, ShieldCheck, Building2, MessageCircle, Loader2, LifeBuoy, Crown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 type Role = "host" | "client";
