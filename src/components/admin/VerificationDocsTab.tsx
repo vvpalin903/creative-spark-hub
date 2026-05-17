@@ -30,8 +30,10 @@ export function VerificationDocsTab() {
   const downloadDocument = async (doc: { id: string; file_url: string }) => {
     setLoadingId(doc.id);
     try {
-      const urlParts = doc.file_url.split("/storage/v1/object/public/verification-docs/");
-      const filePath = urlParts[1];
+      let filePath = doc.file_url;
+      const marker = "/storage/v1/object/public/verification-docs/";
+      const idx = filePath.indexOf(marker);
+      if (idx !== -1) filePath = filePath.substring(idx + marker.length);
       if (!filePath) throw new Error("Invalid file path");
 
       const { data: fileBlob, error } = await supabase.storage
