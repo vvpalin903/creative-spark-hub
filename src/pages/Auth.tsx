@@ -174,8 +174,9 @@ export default function Auth() {
         description: "Войдите в существующий аккаунт или восстановите пароль.",
         variant: "destructive",
       });
-      setMode("signin");
+      setTab("signin");
       setSiEmail(parsed.data.email);
+
       return;
     }
     const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: parsed.data.phone } });
