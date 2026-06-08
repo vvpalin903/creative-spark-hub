@@ -57,6 +57,20 @@ Deno.serve(async (req) => {
       }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    // Ad-hoc rate limit: max 5 distinct sessions per phone per hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60_000).toISOString();
+    const { count: recentCount } = await admin
+      .from("pending_phone_verifications")
+      .select("id", { count: "exact", head: true })
+      .eq("phone", phone)
+      .gt("created_at", oneHourAgo);
+    if ((recentCount ?? 0) >= 5) {
+      return new Response(JSON.stringify({
+        error: "Слишком много попыток подтверждения с этого номера. Попробуйте через час.",
+      }), { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
+
     const params = new URLSearchParams({ api_id: apiId, phone, ip: "-1", json: "1" });
     const smsRes = await fetch(`${SMSRU_CALLCHECK_ADD}?${params.toString()}`);
     const smsJson = await smsRes.json().catch(() => ({} as any));

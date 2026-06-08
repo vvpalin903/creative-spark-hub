@@ -43,7 +43,9 @@ export default function Auth() {
   const [suPhone, setSuPhone] = useState("");
   const [suPassword, setSuPassword] = useState("");
   const [suRole, setSuRole] = useState<"host" | "client">(initialRole);
+  const [suAccepted, setSuAccepted] = useState(false);
   const [suBusy, setSuBusy] = useState(false);
+
 
   // signup phone-verify step
   const [verifyStep, setVerifyStep] = useState<null | "calling" | "finalizing">(null);
@@ -136,6 +138,10 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!suAccepted) {
+      toast({ title: "Подтвердите согласие", description: "Нужно согласиться с условиями и политикой конфиденциальности.", variant: "destructive" });
+      return;
+    }
     const parsed = signUpSchema.safeParse({
       name: suName,
       email: suEmail,
@@ -158,16 +164,16 @@ export default function Auth() {
       });
       return;
     }
-    // Pre-check: email already registered? Avoid wasting a phone call.
-    const { data: emailCheck, error: emailCheckErr } = await supabase.functions.invoke("email-exists", {
-      body: { email: parsed.data.email },
+    // Pre-check: email or phone already registered? Avoid wasting a phone call.
+    const { data: preCheck, error: preCheckErr } = await supabase.functions.invoke("email-exists", {
+      body: { email: parsed.data.email, phone: parsed.data.phone },
     });
-    if (emailCheckErr) {
+    if (preCheckErr) {
       setSuBusy(false);
-      toast({ title: "Ошибка", description: emailCheckErr.message, variant: "destructive" });
+      toast({ title: "Ошибка", description: preCheckErr.message, variant: "destructive" });
       return;
     }
-    if ((emailCheck as any)?.exists) {
+    if ((preCheck as any)?.emailExists) {
       setSuBusy(false);
       toast({
         title: "Email уже зарегистрирован",
@@ -176,7 +182,16 @@ export default function Auth() {
       });
       setTab("signin");
       setSiEmail(parsed.data.email);
-
+      return;
+    }
+    if ((preCheck as any)?.phoneExists) {
+      setSuBusy(false);
+      toast({
+        title: "Телефон уже зарегистрирован",
+        description: "Этот номер привязан к другому аккаунту. Войдите или восстановите пароль.",
+        variant: "destructive",
+      });
+      setTab("signin");
       return;
     }
     const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: parsed.data.phone } });
@@ -195,6 +210,7 @@ export default function Auth() {
     setSignupRetrying(false);
     startPolling(sessionToken, form);
   };
+
 
   const cancelVerify = () => {
     stopPolling();
@@ -351,7 +367,21 @@ export default function Auth() {
                     <Input id="su-password" type="password" autoComplete="new-password" value={suPassword} onChange={(e) => setSuPassword(e.target.value)} required minLength={8} />
                     <p className="text-xs text-muted-foreground mt-1">Минимум 8 символов, включая буквы, цифры и спецсимвол</p>
                   </div>
-                  <Button type="submit" className="w-full" disabled={suBusy}>
+                  <label className="flex items-start gap-2 text-xs text-muted-foreground cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={suAccepted}
+                      onChange={(e) => setSuAccepted(e.target.checked)}
+                      className="mt-0.5 h-4 w-4 rounded border-input accent-primary"
+                    />
+                    <span>
+                      Я согласен с{" "}
+                      <Link to="/docs/terms" className="underline" target="_blank">условиями</Link> и{" "}
+                      <Link to="/docs/privacy" className="underline" target="_blank">политикой конфиденциальности</Link>,
+                      даю согласие на обработку персональных данных.
+                    </span>
+                  </label>
+                  <Button type="submit" className="w-full" disabled={suBusy || !suAccepted}>
                     {suBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                     Продолжить и подтвердить телефон
                   </Button>
@@ -360,10 +390,9 @@ export default function Auth() {
             </Tabs>
 
             <p className="text-xs text-center text-muted-foreground mt-4">
-              Создавая аккаунт, вы соглашаетесь с{" "}
-              <Link to="/docs/terms" className="underline">условиями</Link> и{" "}
-              <Link to="/docs/privacy" className="underline">политикой конфиденциальности</Link>.
+              Подтверждение телефона выполняется бесплатным входящим звонком.
             </p>
+
           </CardContent>
         </Card>
       </div>
