@@ -158,7 +158,29 @@ export default function Auth() {
       });
       return;
     }
+    // Pre-check: email already registered? Avoid wasting a phone call.
+    const { data: emailCheck, error: emailCheckErr } = await supabase.functions.invoke("email-exists", {
+      body: { email: parsed.data.email },
+    });
+    if (emailCheckErr) {
+      setSuBusy(false);
+      toast({ title: "Ошибка", description: emailCheckErr.message, variant: "destructive" });
+      return;
+    }
+    if ((emailCheck as any)?.exists) {
+      setSuBusy(false);
+      toast({
+        title: "Email уже зарегистрирован",
+        description: "Войдите в существующий аккаунт или восстановите пароль.",
+        variant: "destructive",
+      });
+      setTab("signin");
+      setSiEmail(parsed.data.email);
+
+      return;
+    }
     const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: parsed.data.phone } });
+
     setSuBusy(false);
     if (error || (data as any)?.error) {
       toast({ title: "Ошибка", description: (data as any)?.error || error?.message || "Не удалось инициировать проверку", variant: "destructive" });
