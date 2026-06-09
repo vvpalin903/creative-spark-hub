@@ -13,6 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Plus, Pencil } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
+import { SortHead, TableToolbar, useTableControls } from "@/lib/admin/tableControls";
 
 const DOC_TYPES: Record<string, string> = {
   terms: "Пользовательское соглашение",
@@ -37,6 +38,19 @@ export function DocumentsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(docs as any[], {
+    searchFields: (d: any) => `${d.title ?? ""} ${d.short_title ?? ""} ${d.slug ?? ""} ${DOC_TYPES[d.doc_type] ?? d.doc_type ?? ""}`,
+    statusField: (d: any) => d.is_active ? "active" : "inactive",
+    sortAccessors: {
+      title: (d: any) => d.short_title || d.title || "",
+      slug: (d: any) => d.slug ?? "",
+      doc_type: (d: any) => DOC_TYPES[d.doc_type] ?? d.doc_type ?? "",
+      version: (d: any) => Number(d.version) || 0,
+      active: (d: any) => d.is_active ? 1 : 0,
+    },
+    defaultSort: { key: "slug", dir: "asc" },
+  });
+
   return (
     <>
       <div className="flex justify-end mb-4">
@@ -44,21 +58,33 @@ export function DocumentsTab() {
           <Plus className="h-4 w-4 mr-2" /> Добавить документ
         </Button>
       </div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={[
+          { value: "active", label: "Активные" },
+          { value: "inactive", label: "Неактивные" },
+        ]}
+        count={filtered.length}
+        placeholder="Поиск по названию, slug или типу..."
+      />
       <div className="rounded-lg border overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Название</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead>Тип</TableHead>
-              <TableHead>Версия</TableHead>
+              <SortHead label="Название" sortKey="title" sort={sort} setSort={setSort} />
+              <SortHead label="Slug" sortKey="slug" sort={sort} setSort={setSort} />
+              <SortHead label="Тип" sortKey="doc_type" sort={sort} setSort={setSort} />
+              <SortHead label="Версия" sortKey="version" sort={sort} setSort={setSort} />
               <TableHead>Где</TableHead>
-              <TableHead>Активен</TableHead>
+              <SortHead label="Активен" sortKey="active" sort={sort} setSort={setSort} />
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {docs?.map((doc: any) => (
+            {filtered.map((doc: any) => (
               <TableRow key={doc.id}>
                 <TableCell className="font-medium">{doc.short_title || doc.title}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">{doc.slug}</TableCell>
@@ -79,16 +105,17 @@ export function DocumentsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!docs || docs.length === 0) && (
+            {filtered.length === 0 && (
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                  Нет документов
+                  Ничего не найдено
                 </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
 
       {(creating || editDoc) && (
         <DocFormDialog

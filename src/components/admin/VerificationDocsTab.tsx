@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Download, FileText, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/hooks/use-toast";
+import { SortHead, TableToolbar, useTableControls } from "@/lib/admin/tableControls";
 
 const docTypeLabels: Record<string, string> = {
   passport: "Паспорт",
@@ -88,32 +89,60 @@ export function VerificationDocsTab() {
     return <p className="text-center text-muted-foreground py-8">Загрузка...</p>;
   }
 
+  const enriched = (docs || []).map((d: any) => {
+    const profile = profileMap.get(d.user_id);
+    return { ...d, _user_name: profile?.name || "", _user_email: profile?.email || "", _user_phone: profile?.phone || "" };
+  });
+
+  // Inline controls (component-local) — we need them after data is ready
+  return <VerificationDocsTable rows={enriched} loadingId={loadingId} downloadDocument={downloadDocument} />;
+}
+
+function VerificationDocsTable({ rows, loadingId, downloadDocument }: { rows: any[]; loadingId: string | null; downloadDocument: (d: { id: string; file_url: string }) => void }) {
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(rows, {
+    searchFields: (d: any) => `${d._user_name} ${d._user_email} ${d._user_phone} ${docTypeLabels[d.document_type] ?? d.document_type}`,
+    statusField: (d: any) => d.status,
+    sortAccessors: {
+      created_at: (d: any) => new Date(d.created_at),
+      user: (d: any) => d._user_name || d._user_email || "",
+      type: (d: any) => docTypeLabels[d.document_type] ?? d.document_type ?? "",
+      status: (d: any) => d.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Пользователь</TableHead>
-            <TableHead>Тип документа</TableHead>
-            <TableHead>Статус</TableHead>
-            <TableHead>Файл</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {docs?.map((doc) => {
-            const profile = profileMap.get(doc.user_id);
-            return (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(statusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по пользователю или типу..."
+      />
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Пользователь" sortKey="user" sort={sort} setSort={setSort} />
+              <SortHead label="Тип документа" sortKey="type" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
+              <TableHead>Файл</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((doc: any) => (
               <TableRow key={doc.id}>
-                <TableCell className="text-sm">
-                  {new Date(doc.created_at).toLocaleDateString("ru-RU")}
-                </TableCell>
+                <TableCell className="text-sm">{new Date(doc.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell>
-                  {profile ? (
+                  {doc._user_name || doc._user_email ? (
                     <div>
-                      <div className="font-medium">{profile.name || "—"}</div>
+                      <div className="font-medium">{doc._user_name || "—"}</div>
                       <div className="text-xs text-muted-foreground truncate max-w-[200px]">
-                        {profile.email || profile.phone || ""}
+                        {doc._user_email || doc._user_phone || ""}
                       </div>
                     </div>
                   ) : (
@@ -148,17 +177,17 @@ export function VerificationDocsTab() {
                   </Button>
                 </TableCell>
               </TableRow>
-            );
-          })}
-          {(!docs || docs.length === 0) && (
-            <TableRow>
-              <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                Нет загруженных документов
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                  Ничего не найдено
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

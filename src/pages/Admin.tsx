@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { SortHead, TableToolbar, useTableControls } from "@/lib/admin/tableControls";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Eye, Loader2, LogOut, Pencil, Plus } from "lucide-react";
@@ -210,23 +211,46 @@ function ObjectsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(objects as any[], {
+    searchFields: (o: any) => `${o.title ?? ""} ${o.address ?? ""} ${o.city ?? ""}`,
+    statusField: (o: any) => o.object_status,
+    sortAccessors: {
+      created_at: (o: any) => new Date(o.created_at),
+      title: (o: any) => o.title ?? "",
+      address: (o: any) => `${o.city ?? ""} ${o.address ?? ""}`,
+      slots: (o: any) => o.storage_slots?.length || 0,
+      object_status: (o: any) => o.object_status ?? "",
+      verification_status: (o: any) => o.verification_status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
     <div className="space-y-4">
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(objectStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по названию или адресу..."
+      />
       <div className="rounded-lg border overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Дата</TableHead>
-              <TableHead>Название</TableHead>
-              <TableHead>Адрес</TableHead>
-              <TableHead>Слотов</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead>Верификация</TableHead>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Название" sortKey="title" sort={sort} setSort={setSort} />
+              <SortHead label="Адрес" sortKey="address" sort={sort} setSort={setSort} />
+              <SortHead label="Слотов" sortKey="slots" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="object_status" sort={sort} setSort={setSort} />
+              <SortHead label="Верификация" sortKey="verification_status" sort={sort} setSort={setSort} />
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {objects?.map((o: any) => (
+            {filtered.map((o: any) => (
               <TableRow key={o.id}>
                 <TableCell className="text-sm">{new Date(o.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell className="max-w-[220px] truncate">{o.title}</TableCell>
@@ -276,9 +300,9 @@ function ObjectsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!objects || objects.length === 0) && (
+            {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет объектов</TableCell>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -289,6 +313,7 @@ function ObjectsTab() {
     </div>
   );
 }
+
 
 /* -------- Requests -------- */
 function RequestsTab() {
@@ -316,53 +341,78 @@ function RequestsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(requests as any[], {
+    searchFields: (r: any) => `${r.host_objects?.title ?? ""} ${r.host_objects?.address ?? ""} ${r.client_name ?? ""} ${r.client_phone ?? ""} ${r.client_email ?? ""}`,
+    statusField: (r: any) => r.request_status,
+    sortAccessors: {
+      created_at: (r: any) => new Date(r.created_at),
+      object: (r: any) => r.host_objects?.title ?? "",
+      client: (r: any) => r.client_name ?? "",
+      start_date: (r: any) => r.start_date ?? "",
+      request_status: (r: any) => r.request_status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Объект</TableHead>
-            <TableHead>Клиент</TableHead>
-            <TableHead>Контакты</TableHead>
-            <TableHead>Период</TableHead>
-            <TableHead>Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests?.map((r: any) => (
-            <TableRow key={r.id}>
-              <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
-              <TableCell>
-                <div className="font-medium">{r.host_objects?.title || "—"}</div>
-                <div className="text-xs text-muted-foreground truncate max-w-[200px]">{r.host_objects?.address}</div>
-              </TableCell>
-              <TableCell>{r.client_name}</TableCell>
-              <TableCell className="text-xs">
-                <div>{r.client_phone}</div>
-                <div className="text-muted-foreground">{r.client_email}</div>
-              </TableCell>
-              <TableCell className="text-sm">{r.start_date || "?"} → {r.end_date || "?"}</TableCell>
-              <TableCell>
-                <Select value={r.request_status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
-                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-            </TableRow>
-          ))}
-          {(!requests || requests.length === 0) && (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(bookingRequestStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по клиенту, объекту, контактам..."
+      />
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
+              <SortHead label="Клиент" sortKey="client" sort={sort} setSort={setSort} />
+              <TableHead>Контакты</TableHead>
+              <SortHead label="Период" sortKey="start_date" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="request_status" sort={sort} setSort={setSort} />
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r: any) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{r.host_objects?.title || "—"}</div>
+                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">{r.host_objects?.address}</div>
+                </TableCell>
+                <TableCell>{r.client_name}</TableCell>
+                <TableCell className="text-xs">
+                  <div>{r.client_phone}</div>
+                  <div className="text-muted-foreground">{r.client_email}</div>
+                </TableCell>
+                <TableCell className="text-sm">{r.start_date || "?"} → {r.end_date || "?"}</TableCell>
+                <TableCell>
+                  <Select value={r.request_status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                    <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
+
   );
 }
 
@@ -461,96 +511,149 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
     onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
   });
 
-  return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Имя</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Телефон</TableHead>
-            <TableHead>Роли</TableHead>
-            <TableHead>Тариф хоста</TableHead>
-            <TableHead>Верификация</TableHead>
-            <TableHead className="text-right">Действия</TableHead>
-          </TableRow>
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [verFilter, setVerFilter] = useState<string>("all");
 
-        </TableHeader>
-        <TableBody>
-          {profiles?.map((p) => {
-            const userRoles = rolesByUser[p.user_id] || [];
-            const isHost = userRoles.includes("host" as Enums<"app_role">);
-            return (
-              <TableRow key={p.id}>
-                <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
-                <TableCell>{p.name || "—"}</TableCell>
-                <TableCell className="text-sm">{p.email || "—"}</TableCell>
-                <TableCell className="text-sm">{p.phone || "—"}</TableCell>
-                <TableCell className="text-xs">
-                  <div className="flex gap-1 flex-wrap">
-                    {userRoles.length === 0 ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : (
-                      userRoles.map((r) => (
-                        <span
-                          key={r}
-                          className="px-2 py-0.5 rounded border text-xs bg-muted text-muted-foreground border-border"
-                        >
-                          {r}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {isHost ? (
-                    <Select
-                      value={(p as any).host_plan || "standard"}
-                      onValueChange={(v) => updateHostPlan.mutate({ userId: p.user_id, plan: v as any })}
-                      disabled={updateHostPlan.isPending}
-                    >
-                      <SelectTrigger className="w-[150px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(hostPlanLabels).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
-                    {userVerificationStatusLabels[p.verification_status]}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  {isRealAdmin ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setPwTarget({ user_id: p.user_id, email: p.email, name: p.name }); setPwValue(""); }}
-                    >
-                      Сменить пароль
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-          {(!profiles || profiles.length === 0) && (
+  const enriched = (profiles || []).map((p: any) => ({
+    ...p,
+    _roles: rolesByUser[p.user_id] || [],
+  }));
+
+  const { filtered, search, setSearch, sort, setSort } = useTableControls(enriched, {
+    searchFields: (p: any) => `${p.name ?? ""} ${p.email ?? ""} ${p.phone ?? ""}`,
+    sortAccessors: {
+      created_at: (p: any) => new Date(p.created_at),
+      name: (p: any) => p.name ?? "",
+      email: (p: any) => p.email ?? "",
+      phone: (p: any) => p.phone ?? "",
+      host_plan: (p: any) => p.host_plan ?? "",
+      verification_status: (p: any) => p.verification_status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
+  const final = filtered.filter((p: any) => {
+    if (roleFilter !== "all" && !p._roles.includes(roleFilter)) return false;
+    if (verFilter !== "all" && p.verification_status !== verFilter) return false;
+    return true;
+  });
+
+  return (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        count={final.length}
+        placeholder="Поиск по имени, email, телефону..."
+      />
+      <div className="flex items-center gap-2 flex-wrap mb-3 -mt-2">
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue placeholder="Роль" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все роли</SelectItem>
+            {ALL_ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={verFilter} onValueChange={setVerFilter}>
+          <SelectTrigger className="w-[200px] h-9 text-sm"><SelectValue placeholder="Верификация" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Любая верификация</SelectItem>
+            {Object.entries(userVerificationStatusLabels).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v as string}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Имя" sortKey="name" sort={sort} setSort={setSort} />
+              <SortHead label="Email" sortKey="email" sort={sort} setSort={setSort} />
+              <SortHead label="Телефон" sortKey="phone" sort={sort} setSort={setSort} />
+              <TableHead>Роли</TableHead>
+              <SortHead label="Тариф хоста" sortKey="host_plan" sort={sort} setSort={setSort} />
+              <SortHead label="Верификация" sortKey="verification_status" sort={sort} setSort={setSort} />
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {final.map((p: any) => {
+              const userRoles = p._roles as Enums<"app_role">[];
+              const isHost = userRoles.includes("host" as Enums<"app_role">);
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                  <TableCell>{p.name || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.email || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.phone || "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    <div className="flex gap-1 flex-wrap">
+                      {userRoles.length === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        userRoles.map((r) => (
+                          <span
+                            key={r}
+                            className="px-2 py-0.5 rounded border text-xs bg-muted text-muted-foreground border-border"
+                          >
+                            {r}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {isHost ? (
+                      <Select
+                        value={(p as any).host_plan || "standard"}
+                        onValueChange={(v) => updateHostPlan.mutate({ userId: p.user_id, plan: v as any })}
+                        disabled={updateHostPlan.isPending}
+                      >
+                        <SelectTrigger className="w-[150px] h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(hostPlanLabels).map(([k, v]) => (
+                            <SelectItem key={k} value={k}>{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
+                      {userVerificationStatusLabels[p.verification_status]}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isRealAdmin ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setPwTarget({ user_id: p.user_id, email: p.email, name: p.name }); setPwValue(""); }}
+                      >
+                        Сменить пароль
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {final.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
 
       <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setPwValue(""); } }}>
         <DialogContent>
@@ -624,6 +727,19 @@ function TicketsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(tickets as any[], {
+    searchFields: (t: any) => `${t.subject ?? ""} ${t.initiator?.name ?? ""} ${t.initiator?.email ?? ""} ${t.host_objects?.title ?? ""}`,
+    statusField: (t: any) => t.status,
+    sortAccessors: {
+      created_at: (t: any) => new Date(t.created_at),
+      subject: (t: any) => t.subject ?? "",
+      initiator: (t: any) => t.initiator?.name ?? "",
+      object: (t: any) => t.host_objects?.title ?? "",
+      status: (t: any) => t.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -631,21 +747,30 @@ function TicketsTab() {
           <Plus className="h-4 w-4 mr-1" /> Новое обращение
         </Button>
       </div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(ticketStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по теме, инициатору, объекту..."
+      />
       <div className="rounded-lg border overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Дата</TableHead>
-              <TableHead>Тема</TableHead>
-              <TableHead>Инициатор</TableHead>
-              <TableHead>Объект</TableHead>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Тема" sortKey="subject" sort={sort} setSort={setSort} />
+              <SortHead label="Инициатор" sortKey="initiator" sort={sort} setSort={setSort} />
+              <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
               <TableHead>Размещение</TableHead>
-              <TableHead>Статус</TableHead>
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tickets?.map((t: any) => (
+            {filtered.map((t: any) => (
               <TableRow key={t.id}>
                 <TableCell className="text-sm">{new Date(t.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell className="max-w-[240px] truncate font-medium">{t.subject}</TableCell>
@@ -670,14 +795,15 @@ function TicketsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!tickets || tickets.length === 0) && (
+            {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет обращений</TableCell>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
 
       <CreateTicketDialog
         open={createOpen}
@@ -730,73 +856,94 @@ function SuperHostTab() {
     onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(requests as any[], {
+    searchFields: (r: any) => `${r.profile?.name ?? ""} ${r.profile?.email ?? ""} ${r.contact_email ?? ""} ${r.contact_phone ?? ""} ${r.comment ?? ""}`,
+    statusField: (r: any) => r.status,
+    sortAccessors: {
+      created_at: (r: any) => new Date(r.created_at),
+      host: (r: any) => r.profile?.name ?? "",
+      plan: (r: any) => r.profile?.host_plan ?? "",
+      status: (r: any) => r.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Хост</TableHead>
-            <TableHead>Контакты</TableHead>
-            <TableHead>Текущий тариф</TableHead>
-            <TableHead>Комментарий</TableHead>
-            <TableHead>Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests?.map((r: any) => (
-            <TableRow key={r.id}>
-              <TableCell className="text-sm whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
-              <TableCell>
-                <div className="font-medium">{r.profile?.name || "—"}</div>
-                <div className="text-xs text-muted-foreground">{r.host_user_id.slice(0, 8)}…</div>
-              </TableCell>
-              <TableCell className="text-xs space-y-0.5">
-                <div>{r.contact_email || r.profile?.email || "—"}</div>
-                <div>{r.contact_phone || r.profile?.phone || "—"}</div>
-                <div>TG: {r.contact_telegram || r.profile?.telegram || "—"}</div>
-              </TableCell>
-              <TableCell className="text-sm">{hostPlanLabels[r.profile?.host_plan || "standard"]}</TableCell>
-              <TableCell className="text-xs max-w-[240px] truncate">{r.comment || "—"}</TableCell>
-              <TableCell>
-                <Select value={r.status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(hostPlanRequestStatusLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-            </TableRow>
-          ))}
-          {(!requests || requests.length === 0) && (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(hostPlanRequestStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по хосту, контактам, комментарию..."
+      />
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Заявок нет</TableCell>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Хост" sortKey="host" sort={sort} setSort={setSort} />
+              <TableHead>Контакты</TableHead>
+              <SortHead label="Текущий тариф" sortKey="plan" sort={sort} setSort={setSort} />
+              <TableHead>Комментарий</TableHead>
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r: any) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-sm whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{r.profile?.name || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{r.host_user_id.slice(0, 8)}…</div>
+                </TableCell>
+                <TableCell className="text-xs space-y-0.5">
+                  <div>{r.contact_email || r.profile?.email || "—"}</div>
+                  <div>{r.contact_phone || r.profile?.phone || "—"}</div>
+                  <div>TG: {r.contact_telegram || r.profile?.telegram || "—"}</div>
+                </TableCell>
+                <TableCell className="text-sm">{hostPlanLabels[r.profile?.host_plan || "standard"]}</TableCell>
+                <TableCell className="text-xs max-w-[240px] truncate">{r.comment || "—"}</TableCell>
+                <TableCell>
+                  <Select value={r.status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(hostPlanRequestStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
+
   );
 }
 
 /* -------- Object documents (external verification) -------- */
 function ObjectDocsTab() {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<string>("all");
 
   const { data: docs } = useQuery({
-    queryKey: ["admin", "object_documents", filter],
+    queryKey: ["admin", "object_documents"],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("object_documents")
         .select("*, host_objects(title, address)")
         .order("created_at", { ascending: false });
-      if (filter !== "all") q = q.eq("status", filter as any);
-      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -831,23 +978,29 @@ function ObjectDocsTab() {
 
   const manualReview = (docs || []).filter((d: any) => d.status === "manual_review");
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(docs as any[], {
+    searchFields: (d: any) => `${d.host_objects?.title ?? ""} ${d.host_objects?.address ?? ""} ${d.document_type ?? ""} ${d.external_job_id ?? ""}`,
+    statusField: (d: any) => d.status,
+    sortAccessors: {
+      created_at: (d: any) => new Date(d.created_at),
+      object: (d: any) => d.host_objects?.title ?? "",
+      type: (d: any) => d.document_type ?? "",
+      status: (d: any) => d.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Фильтр:</span>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все</SelectItem>
-              {Object.entries(objectDocumentStatusLabels).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <p className="text-xs text-muted-foreground">{docs?.length || 0} записей</p>
-      </div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(objectDocumentStatusLabels).map(([value, label]) => ({ value, label: label as string }))}
+        count={filtered.length}
+        placeholder="Поиск по объекту, типу, job-id..."
+      />
 
       {manualReview.length > 0 && (
         <Card>
@@ -856,7 +1009,7 @@ function ObjectDocsTab() {
           </CardHeader>
           <CardContent className="space-y-2">
             {manualReview.map((d: any) => (
-              <ObjectDocRow key={d.id} d={d} onUpdate={(status, comment) => updateStatus.mutate({ id: d.id, status, comment })} onDispatch={() => dispatch.mutate(d.id)} highlight />
+              <ObjectDocRow key={d.id} d={d} onUpdate={(s, comment) => updateStatus.mutate({ id: d.id, status: s, comment })} onDispatch={() => dispatch.mutate(d.id)} highlight />
             ))}
           </CardContent>
         </Card>
@@ -866,17 +1019,17 @@ function ObjectDocsTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Дата</TableHead>
-              <TableHead>Объект</TableHead>
-              <TableHead>Тип</TableHead>
-              <TableHead>Статус</TableHead>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
+              <SortHead label="Тип" sortKey="type" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
               <TableHead>External job</TableHead>
               <TableHead>Файл</TableHead>
               <TableHead>Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {docs?.map((d: any) => (
+            {filtered.map((d: any) => (
               <TableRow key={d.id}>
                 <TableCell className="text-xs whitespace-nowrap">{new Date(d.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell className="text-sm max-w-[220px] truncate">{d.host_objects?.title || d.object_id.slice(0, 8) + "…"}</TableCell>
@@ -907,7 +1060,8 @@ function ObjectDocsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!docs || docs.length === 0) && (
+            {filtered.length === 0 && (
+
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Документов нет</TableCell>
               </TableRow>
