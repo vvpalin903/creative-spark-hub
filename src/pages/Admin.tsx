@@ -511,96 +511,149 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
     onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
   });
 
-  return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Имя</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Телефон</TableHead>
-            <TableHead>Роли</TableHead>
-            <TableHead>Тариф хоста</TableHead>
-            <TableHead>Верификация</TableHead>
-            <TableHead className="text-right">Действия</TableHead>
-          </TableRow>
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [verFilter, setVerFilter] = useState<string>("all");
 
-        </TableHeader>
-        <TableBody>
-          {profiles?.map((p) => {
-            const userRoles = rolesByUser[p.user_id] || [];
-            const isHost = userRoles.includes("host" as Enums<"app_role">);
-            return (
-              <TableRow key={p.id}>
-                <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
-                <TableCell>{p.name || "—"}</TableCell>
-                <TableCell className="text-sm">{p.email || "—"}</TableCell>
-                <TableCell className="text-sm">{p.phone || "—"}</TableCell>
-                <TableCell className="text-xs">
-                  <div className="flex gap-1 flex-wrap">
-                    {userRoles.length === 0 ? (
-                      <span className="text-muted-foreground">—</span>
-                    ) : (
-                      userRoles.map((r) => (
-                        <span
-                          key={r}
-                          className="px-2 py-0.5 rounded border text-xs bg-muted text-muted-foreground border-border"
-                        >
-                          {r}
-                        </span>
-                      ))
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {isHost ? (
-                    <Select
-                      value={(p as any).host_plan || "standard"}
-                      onValueChange={(v) => updateHostPlan.mutate({ userId: p.user_id, plan: v as any })}
-                      disabled={updateHostPlan.isPending}
-                    >
-                      <SelectTrigger className="w-[150px] h-8 text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {Object.entries(hostPlanLabels).map(([k, v]) => (
-                          <SelectItem key={k} value={k}>{v}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
-                    {userVerificationStatusLabels[p.verification_status]}
-                  </span>
-                </TableCell>
-                <TableCell className="text-right">
-                  {isRealAdmin ? (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => { setPwTarget({ user_id: p.user_id, email: p.email, name: p.name }); setPwValue(""); }}
-                    >
-                      Сменить пароль
-                    </Button>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">—</span>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-          {(!profiles || profiles.length === 0) && (
+  const enriched = (profiles || []).map((p: any) => ({
+    ...p,
+    _roles: rolesByUser[p.user_id] || [],
+  }));
+
+  const { filtered, search, setSearch, sort, setSort } = useTableControls(enriched, {
+    searchFields: (p: any) => `${p.name ?? ""} ${p.email ?? ""} ${p.phone ?? ""}`,
+    sortAccessors: {
+      created_at: (p: any) => new Date(p.created_at),
+      name: (p: any) => p.name ?? "",
+      email: (p: any) => p.email ?? "",
+      phone: (p: any) => p.phone ?? "",
+      host_plan: (p: any) => p.host_plan ?? "",
+      verification_status: (p: any) => p.verification_status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
+  const final = filtered.filter((p: any) => {
+    if (roleFilter !== "all" && !p._roles.includes(roleFilter)) return false;
+    if (verFilter !== "all" && p.verification_status !== verFilter) return false;
+    return true;
+  });
+
+  return (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        count={final.length}
+        placeholder="Поиск по имени, email, телефону..."
+      />
+      <div className="flex items-center gap-2 flex-wrap mb-3 -mt-2">
+        <Select value={roleFilter} onValueChange={setRoleFilter}>
+          <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue placeholder="Роль" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Все роли</SelectItem>
+            {ALL_ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <Select value={verFilter} onValueChange={setVerFilter}>
+          <SelectTrigger className="w-[200px] h-9 text-sm"><SelectValue placeholder="Верификация" /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Любая верификация</SelectItem>
+            {Object.entries(userVerificationStatusLabels).map(([k, v]) => (
+              <SelectItem key={k} value={k}>{v as string}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Имя" sortKey="name" sort={sort} setSort={setSort} />
+              <SortHead label="Email" sortKey="email" sort={sort} setSort={setSort} />
+              <SortHead label="Телефон" sortKey="phone" sort={sort} setSort={setSort} />
+              <TableHead>Роли</TableHead>
+              <SortHead label="Тариф хоста" sortKey="host_plan" sort={sort} setSort={setSort} />
+              <SortHead label="Верификация" sortKey="verification_status" sort={sort} setSort={setSort} />
+              <TableHead className="text-right">Действия</TableHead>
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {final.map((p: any) => {
+              const userRoles = p._roles as Enums<"app_role">[];
+              const isHost = userRoles.includes("host" as Enums<"app_role">);
+              return (
+                <TableRow key={p.id}>
+                  <TableCell className="text-sm">{new Date(p.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                  <TableCell>{p.name || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.email || "—"}</TableCell>
+                  <TableCell className="text-sm">{p.phone || "—"}</TableCell>
+                  <TableCell className="text-xs">
+                    <div className="flex gap-1 flex-wrap">
+                      {userRoles.length === 0 ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : (
+                        userRoles.map((r) => (
+                          <span
+                            key={r}
+                            className="px-2 py-0.5 rounded border text-xs bg-muted text-muted-foreground border-border"
+                          >
+                            {r}
+                          </span>
+                        ))
+                      )}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {isHost ? (
+                      <Select
+                        value={(p as any).host_plan || "standard"}
+                        onValueChange={(v) => updateHostPlan.mutate({ userId: p.user_id, plan: v as any })}
+                        disabled={updateHostPlan.isPending}
+                      >
+                        <SelectTrigger className="w-[150px] h-8 text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Object.entries(hostPlanLabels).map(([k, v]) => (
+                            <SelectItem key={k} value={k}>{v}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <span className={`text-xs px-2 py-1 rounded ${objectStatusColors[p.verification_status] || "bg-muted"}`}>
+                      {userVerificationStatusLabels[p.verification_status]}
+                    </span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {isRealAdmin ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { setPwTarget({ user_id: p.user_id, email: p.email, name: p.name }); setPwValue(""); }}
+                      >
+                        Сменить пароль
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+            {final.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
+
 
       <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setPwValue(""); } }}>
         <DialogContent>
