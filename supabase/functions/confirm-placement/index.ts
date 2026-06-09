@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     }
     const userId = userData.user.id;
 
-    const { request_id } = await req.json();
+    const { request_id, share_phone } = await req.json();
     if (!request_id) {
       return new Response(JSON.stringify({ error: 'request_id required' }), { status: 400, headers: corsHeaders });
     }
@@ -65,6 +65,16 @@ Deno.serve(async (req) => {
     // Обновляем статус заявки
     await admin.from('booking_requests').update({ request_status: 'accepted' }).eq('id', br.id);
 
+    // Телефон хоста (если решил поделиться)
+    let hostPhone: string | null = null;
+    let hostName: string | null = null;
+    if (share_phone) {
+      const { data: hostProf } = await admin.from('profiles').select('phone, name')
+        .eq('user_id', br.host_user_id).maybeSingle();
+      hostPhone = hostProf?.phone || null;
+      hostName = hostProf?.name || null;
+    }
+
     // Системное сообщение в чат
     const { data: chat } = await admin.from('chats').select('id').eq('related_request_id', br.id).maybeSingle();
     if (chat) {
@@ -72,6 +82,12 @@ Deno.serve(async (req) => {
         chat_id: chat.id, sender_user_id: null, message_type: 'system',
         message_text: `Хост подтвердил размещение с ${br.start_date}${br.end_date ? ` по ${br.end_date}` : ''}.`,
       });
+      if (share_phone && hostPhone) {
+        await admin.from('messages').insert({
+          chat_id: chat.id, sender_user_id: null, message_type: 'system',
+          message_text: `Контактный телефон хоста${hostName ? ` (${hostName})` : ''}: ${hostPhone}`,
+        });
+      }
     }
 
     // Email клиенту (если есть и в настройках разрешено)
@@ -85,7 +101,12 @@ Deno.serve(async (req) => {
             body: {
               type: 'host_application_approved',
               to: br.client_email,
-              data: { name: br.client_name, address: '' },
+              data: {
+                name: br.client_name,
+                address: '',
+                host_phone: share_phone ? hostPhone : null,
+                host_name: share_phone ? hostName : null,
+              },
             },
           });
         }
