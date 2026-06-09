@@ -856,56 +856,80 @@ function SuperHostTab() {
     onError: (e: any) => toast({ title: "Ошибка", description: e.message, variant: "destructive" }),
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(requests as any[], {
+    searchFields: (r: any) => `${r.profile?.name ?? ""} ${r.profile?.email ?? ""} ${r.contact_email ?? ""} ${r.contact_phone ?? ""} ${r.comment ?? ""}`,
+    statusField: (r: any) => r.status,
+    sortAccessors: {
+      created_at: (r: any) => new Date(r.created_at),
+      host: (r: any) => r.profile?.name ?? "",
+      plan: (r: any) => r.profile?.host_plan ?? "",
+      status: (r: any) => r.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Хост</TableHead>
-            <TableHead>Контакты</TableHead>
-            <TableHead>Текущий тариф</TableHead>
-            <TableHead>Комментарий</TableHead>
-            <TableHead>Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests?.map((r: any) => (
-            <TableRow key={r.id}>
-              <TableCell className="text-sm whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
-              <TableCell>
-                <div className="font-medium">{r.profile?.name || "—"}</div>
-                <div className="text-xs text-muted-foreground">{r.host_user_id.slice(0, 8)}…</div>
-              </TableCell>
-              <TableCell className="text-xs space-y-0.5">
-                <div>{r.contact_email || r.profile?.email || "—"}</div>
-                <div>{r.contact_phone || r.profile?.phone || "—"}</div>
-                <div>TG: {r.contact_telegram || r.profile?.telegram || "—"}</div>
-              </TableCell>
-              <TableCell className="text-sm">{hostPlanLabels[r.profile?.host_plan || "standard"]}</TableCell>
-              <TableCell className="text-xs max-w-[240px] truncate">{r.comment || "—"}</TableCell>
-              <TableCell>
-                <Select value={r.status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(hostPlanRequestStatusLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-            </TableRow>
-          ))}
-          {(!requests || requests.length === 0) && (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(hostPlanRequestStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по хосту, контактам, комментарию..."
+      />
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Заявок нет</TableCell>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Хост" sortKey="host" sort={sort} setSort={setSort} />
+              <TableHead>Контакты</TableHead>
+              <SortHead label="Текущий тариф" sortKey="plan" sort={sort} setSort={setSort} />
+              <TableHead>Комментарий</TableHead>
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r: any) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-sm whitespace-nowrap">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{r.profile?.name || "—"}</div>
+                  <div className="text-xs text-muted-foreground">{r.host_user_id.slice(0, 8)}…</div>
+                </TableCell>
+                <TableCell className="text-xs space-y-0.5">
+                  <div>{r.contact_email || r.profile?.email || "—"}</div>
+                  <div>{r.contact_phone || r.profile?.phone || "—"}</div>
+                  <div>TG: {r.contact_telegram || r.profile?.telegram || "—"}</div>
+                </TableCell>
+                <TableCell className="text-sm">{hostPlanLabels[r.profile?.host_plan || "standard"]}</TableCell>
+                <TableCell className="text-xs max-w-[240px] truncate">{r.comment || "—"}</TableCell>
+                <TableCell>
+                  <Select value={r.status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(hostPlanRequestStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
+
   );
 }
 
