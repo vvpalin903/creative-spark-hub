@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "@/hooks/use-toast";
 import { Eye, Loader2, LogOut, Pencil, Plus } from "lucide-react";
@@ -370,6 +371,30 @@ const ALL_ROLES: Enums<"app_role">[] = ["client", "host", "back_office", "admin"
 
 function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
   const queryClient = useQueryClient();
+  const [pwTarget, setPwTarget] = useState<{ user_id: string; email: string | null; name: string | null } | null>(null);
+  const [pwValue, setPwValue] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+
+  const setPassword = async () => {
+    if (!pwTarget) return;
+    if (pwValue.length < 8) {
+      toast({ title: "Минимум 8 символов", variant: "destructive" });
+      return;
+    }
+    setPwBusy(true);
+    const { data, error } = await supabase.functions.invoke("admin-set-password", {
+      body: { user_id: pwTarget.user_id, password: pwValue },
+    });
+    setPwBusy(false);
+    if (error || (data as any)?.error) {
+      toast({ title: "Ошибка", description: (data as any)?.error || error?.message, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Пароль изменён", description: pwTarget.email || pwTarget.name || pwTarget.user_id });
+    setPwTarget(null);
+    setPwValue("");
+  };
+
   const { data: profiles } = useQuery({
     queryKey: ["admin", "profiles"],
     queryFn: async () => {
@@ -448,7 +473,9 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
             <TableHead>Роли</TableHead>
             <TableHead>Тариф хоста</TableHead>
             <TableHead>Верификация</TableHead>
+            <TableHead className="text-right">Действия</TableHead>
           </TableRow>
+
         </TableHeader>
         <TableBody>
           {profiles?.map((p) => {
@@ -501,16 +528,62 @@ function UsersTab({ isRealAdmin }: { isRealAdmin: boolean }) {
                     {userVerificationStatusLabels[p.verification_status]}
                   </span>
                 </TableCell>
+                <TableCell className="text-right">
+                  {isRealAdmin ? (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => { setPwTarget({ user_id: p.user_id, email: p.email, name: p.name }); setPwValue(""); }}
+                    >
+                      Сменить пароль
+                    </Button>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </TableCell>
               </TableRow>
             );
           })}
           {(!profiles || profiles.length === 0) && (
             <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
+              <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Нет пользователей</TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      <Dialog open={!!pwTarget} onOpenChange={(o) => { if (!o) { setPwTarget(null); setPwValue(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Сменить пароль</DialogTitle>
+            <DialogDescription>
+              Пользователь: <strong>{pwTarget?.email || pwTarget?.name || pwTarget?.user_id}</strong>
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="new-pw">Новый пароль (8–72 символов)</Label>
+            <Input
+              id="new-pw"
+              type="text"
+              autoComplete="new-password"
+              value={pwValue}
+              onChange={(e) => setPwValue(e.target.value)}
+              placeholder="Минимум 8 символов"
+            />
+            <p className="text-xs text-muted-foreground">
+              Пароль изменится немедленно. Сообщите его пользователю по защищённому каналу.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPwTarget(null); setPwValue(""); }} disabled={pwBusy}>Отмена</Button>
+            <Button onClick={setPassword} disabled={pwBusy || pwValue.length < 8}>
+              {pwBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              Установить пароль
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
