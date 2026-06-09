@@ -55,6 +55,7 @@ function buildHtml(type: string, data: Record<string, any> = {}): string {
         <h3>Здравствуйте, ${data.name || ''}!</h3>
         <p>Ваша заявка на размещение по адресу <strong>${data.address || ''}</strong> <strong style="color:#2a9d8f;">подтверждена</strong>!</p>
         <p>Ваш объект добавлен в каталог и скоро будет доступен клиентам.</p>
+        ${data.host_phone ? `<p style="background:#f3f9f8;padding:12px;border-radius:8px;"><strong>Контакт хоста${data.host_name ? ` (${data.host_name})` : ''}:</strong> <a href="tel:${data.host_phone}" style="color:#2a9d8f;">${data.host_phone}</a></p>` : ''}
         ${data.is_mytishchi === false ? '<p style="color:#e76f51;"><strong>Обратите внимание:</strong> сервис работает в тестовом режиме, проверка объектов осуществляется пока только в границах г. Мытищи Московской области.</p>' : ''}
       `
       break

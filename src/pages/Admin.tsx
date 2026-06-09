@@ -1025,6 +1025,7 @@ function ObjectDocsTab() {
               <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
               <TableHead>External job</TableHead>
               <TableHead>Файл</TableHead>
+              <TableHead>Объявление</TableHead>
               <TableHead>Действия</TableHead>
             </TableRow>
           </TableHeader>
@@ -1042,6 +1043,9 @@ function ObjectDocsTab() {
                 <TableCell className="text-xs font-mono">{d.external_job_id ? d.external_job_id.slice(0, 14) + "…" : "—"}</TableCell>
                 <TableCell className="text-xs">
                   {d.file_url ? <a className="text-primary hover:underline" href={d.file_url} target="_blank" rel="noreferrer">открыть</a> : "—"}
+                </TableCell>
+                <TableCell className="text-xs">
+                  <a className="text-primary hover:underline" href={`/lot/${d.object_id}`} target="_blank" rel="noreferrer">перейти</a>
                 </TableCell>
                 <TableCell>
                   <div className="flex gap-1 flex-wrap">
@@ -1063,7 +1067,7 @@ function ObjectDocsTab() {
             {filtered.length === 0 && (
 
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Документов нет</TableCell>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Документов нет</TableCell>
               </TableRow>
             )}
           </TableBody>

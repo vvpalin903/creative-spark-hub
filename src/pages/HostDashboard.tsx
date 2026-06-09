@@ -9,6 +9,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Plus, Building2, Inbox, History, ShieldCheck, Pencil, Send, MessageCircle, EyeOff, Eye, LifeBuoy, Crown } from "lucide-react";
 import { HostObjectFormDialog } from "@/components/dashboard/HostObjectFormDialog";
 import { RequestChatLink } from "@/components/chat/RequestChatLink";
@@ -254,10 +257,13 @@ function RequestsTab() {
     },
   });
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [sharePhone, setSharePhone] = useState(true);
+
   const confirmPlacement = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, share_phone }: { id: string; share_phone: boolean }) => {
       const { data, error } = await supabase.functions.invoke("confirm-placement", {
-        body: { request_id: id },
+        body: { request_id: id, share_phone },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -265,6 +271,7 @@ function RequestsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["host", "requests"] });
       queryClient.invalidateQueries({ queryKey: ["host", "placements"] });
+      setConfirmingId(null);
       toast({ title: "Размещение подтверждено" });
     },
     onError: (e: any) => toast({ title: "Не удалось подтвердить", description: e.message, variant: "destructive" }),
@@ -335,7 +342,7 @@ function RequestsTab() {
                       {r.start_date && r.slot_id ? (
                         <Button
                           size="sm"
-                          onClick={() => confirmPlacement.mutate(r.id)}
+                          onClick={() => { setSharePhone(true); setConfirmingId(r.id); }}
                           disabled={confirmPlacement.isPending}
                         >
                           Подтвердить
@@ -381,6 +388,41 @@ function RequestsTab() {
         </TableBody>
       </Table>
       </div>
+
+      <Dialog open={!!confirmingId} onOpenChange={(o) => !o && setConfirmingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Подтвердить заявку</DialogTitle>
+            <DialogDescription>
+              После подтверждения клиент получит уведомление и сможет с вами связаться через чат.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-start gap-3 py-2">
+            <Checkbox
+              id="share-phone"
+              checked={sharePhone}
+              onCheckedChange={(v) => setSharePhone(!!v)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="share-phone" className="cursor-pointer">
+                Поделиться моим телефоном с клиентом
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Ваш номер будет отправлен клиенту в чат и на e-mail для удобной связи.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmingId(null)}>Отмена</Button>
+            <Button
+              onClick={() => confirmingId && confirmPlacement.mutate({ id: confirmingId, share_phone: sharePhone })}
+              disabled={confirmPlacement.isPending}
+            >
+              Подтвердить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
