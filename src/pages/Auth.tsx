@@ -10,7 +10,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Loader2, Building2, User as UserIcon, Phone, ShieldCheck } from "lucide-react";
-import { signInSchema, signUpSchema } from "@/lib/validation";
+import { signInSchema, signUpSchema, normalizePhoneInput } from "@/lib/validation";
 import { checkPasswordPwned } from "@/lib/passwordStrength";
 import { useAuth } from "@/hooks/useAuth";
 
