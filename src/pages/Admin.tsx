@@ -341,53 +341,78 @@ function RequestsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(requests as any[], {
+    searchFields: (r: any) => `${r.host_objects?.title ?? ""} ${r.host_objects?.address ?? ""} ${r.client_name ?? ""} ${r.client_phone ?? ""} ${r.client_email ?? ""}`,
+    statusField: (r: any) => r.request_status,
+    sortAccessors: {
+      created_at: (r: any) => new Date(r.created_at),
+      object: (r: any) => r.host_objects?.title ?? "",
+      client: (r: any) => r.client_name ?? "",
+      start_date: (r: any) => r.start_date ?? "",
+      request_status: (r: any) => r.request_status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
-    <div className="rounded-lg border overflow-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Дата</TableHead>
-            <TableHead>Объект</TableHead>
-            <TableHead>Клиент</TableHead>
-            <TableHead>Контакты</TableHead>
-            <TableHead>Период</TableHead>
-            <TableHead>Статус</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {requests?.map((r: any) => (
-            <TableRow key={r.id}>
-              <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
-              <TableCell>
-                <div className="font-medium">{r.host_objects?.title || "—"}</div>
-                <div className="text-xs text-muted-foreground truncate max-w-[200px]">{r.host_objects?.address}</div>
-              </TableCell>
-              <TableCell>{r.client_name}</TableCell>
-              <TableCell className="text-xs">
-                <div>{r.client_phone}</div>
-                <div className="text-muted-foreground">{r.client_email}</div>
-              </TableCell>
-              <TableCell className="text-sm">{r.start_date || "?"} → {r.end_date || "?"}</TableCell>
-              <TableCell>
-                <Select value={r.request_status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
-                  <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
-                      <SelectItem key={k} value={k}>{v}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </TableCell>
-            </TableRow>
-          ))}
-          {(!requests || requests.length === 0) && (
+    <div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(bookingRequestStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по клиенту, объекту, контактам..."
+      />
+      <div className="rounded-lg border overflow-auto">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Нет заявок</TableCell>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
+              <SortHead label="Клиент" sortKey="client" sort={sort} setSort={setSort} />
+              <TableHead>Контакты</TableHead>
+              <SortHead label="Период" sortKey="start_date" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="request_status" sort={sort} setSort={setSort} />
             </TableRow>
-          )}
-        </TableBody>
-      </Table>
+          </TableHeader>
+          <TableBody>
+            {filtered.map((r: any) => (
+              <TableRow key={r.id}>
+                <TableCell className="text-sm">{new Date(r.created_at).toLocaleDateString("ru-RU")}</TableCell>
+                <TableCell>
+                  <div className="font-medium">{r.host_objects?.title || "—"}</div>
+                  <div className="text-xs text-muted-foreground truncate max-w-[200px]">{r.host_objects?.address}</div>
+                </TableCell>
+                <TableCell>{r.client_name}</TableCell>
+                <TableCell className="text-xs">
+                  <div>{r.client_phone}</div>
+                  <div className="text-muted-foreground">{r.client_email}</div>
+                </TableCell>
+                <TableCell className="text-sm">{r.start_date || "?"} → {r.end_date || "?"}</TableCell>
+                <TableCell>
+                  <Select value={r.request_status} onValueChange={(v) => updateStatus.mutate({ id: r.id, status: v })}>
+                    <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(bookingRequestStatusLabels).map(([k, v]) => (
+                        <SelectItem key={k} value={k}>{v}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </TableCell>
+              </TableRow>
+            ))}
+            {filtered.length === 0 && (
+              <TableRow>
+                <TableCell colSpan={6} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
+
   );
 }
 
