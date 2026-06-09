@@ -936,17 +936,14 @@ function SuperHostTab() {
 /* -------- Object documents (external verification) -------- */
 function ObjectDocsTab() {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<string>("all");
 
   const { data: docs } = useQuery({
-    queryKey: ["admin", "object_documents", filter],
+    queryKey: ["admin", "object_documents"],
     queryFn: async () => {
-      let q = supabase
+      const { data, error } = await supabase
         .from("object_documents")
         .select("*, host_objects(title, address)")
         .order("created_at", { ascending: false });
-      if (filter !== "all") q = q.eq("status", filter as any);
-      const { data, error } = await q;
       if (error) throw error;
       return data;
     },
@@ -981,23 +978,29 @@ function ObjectDocsTab() {
 
   const manualReview = (docs || []).filter((d: any) => d.status === "manual_review");
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(docs as any[], {
+    searchFields: (d: any) => `${d.host_objects?.title ?? ""} ${d.host_objects?.address ?? ""} ${d.document_type ?? ""} ${d.external_job_id ?? ""}`,
+    statusField: (d: any) => d.status,
+    sortAccessors: {
+      created_at: (d: any) => new Date(d.created_at),
+      object: (d: any) => d.host_objects?.title ?? "",
+      type: (d: any) => d.document_type ?? "",
+      status: (d: any) => d.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Фильтр:</span>
-          <Select value={filter} onValueChange={setFilter}>
-            <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Все</SelectItem>
-              {Object.entries(objectDocumentStatusLabels).map(([k, v]) => (
-                <SelectItem key={k} value={k}>{v}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-        <p className="text-xs text-muted-foreground">{docs?.length || 0} записей</p>
-      </div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(objectDocumentStatusLabels).map(([value, label]) => ({ value, label: label as string }))}
+        count={filtered.length}
+        placeholder="Поиск по объекту, типу, job-id..."
+      />
 
       {manualReview.length > 0 && (
         <Card>
@@ -1006,7 +1009,7 @@ function ObjectDocsTab() {
           </CardHeader>
           <CardContent className="space-y-2">
             {manualReview.map((d: any) => (
-              <ObjectDocRow key={d.id} d={d} onUpdate={(status, comment) => updateStatus.mutate({ id: d.id, status, comment })} onDispatch={() => dispatch.mutate(d.id)} highlight />
+              <ObjectDocRow key={d.id} d={d} onUpdate={(s, comment) => updateStatus.mutate({ id: d.id, status: s, comment })} onDispatch={() => dispatch.mutate(d.id)} highlight />
             ))}
           </CardContent>
         </Card>
@@ -1016,17 +1019,17 @@ function ObjectDocsTab() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Дата</TableHead>
-              <TableHead>Объект</TableHead>
-              <TableHead>Тип</TableHead>
-              <TableHead>Статус</TableHead>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
+              <SortHead label="Тип" sortKey="type" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
               <TableHead>External job</TableHead>
               <TableHead>Файл</TableHead>
               <TableHead>Действия</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {docs?.map((d: any) => (
+            {filtered.map((d: any) => (
               <TableRow key={d.id}>
                 <TableCell className="text-xs whitespace-nowrap">{new Date(d.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell className="text-sm max-w-[220px] truncate">{d.host_objects?.title || d.object_id.slice(0, 8) + "…"}</TableCell>
@@ -1057,7 +1060,8 @@ function ObjectDocsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!docs || docs.length === 0) && (
+            {filtered.length === 0 && (
+
               <TableRow>
                 <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Документов нет</TableCell>
               </TableRow>
