@@ -257,10 +257,13 @@ function RequestsTab() {
     },
   });
 
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [sharePhone, setSharePhone] = useState(true);
+
   const confirmPlacement = useMutation({
-    mutationFn: async (id: string) => {
+    mutationFn: async ({ id, share_phone }: { id: string; share_phone: boolean }) => {
       const { data, error } = await supabase.functions.invoke("confirm-placement", {
-        body: { request_id: id },
+        body: { request_id: id, share_phone },
       });
       if (error) throw error;
       if ((data as any)?.error) throw new Error((data as any).error);
@@ -268,6 +271,7 @@ function RequestsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["host", "requests"] });
       queryClient.invalidateQueries({ queryKey: ["host", "placements"] });
+      setConfirmingId(null);
       toast({ title: "Размещение подтверждено" });
     },
     onError: (e: any) => toast({ title: "Не удалось подтвердить", description: e.message, variant: "destructive" }),
