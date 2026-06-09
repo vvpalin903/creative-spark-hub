@@ -696,6 +696,7 @@ function TicketsTab() {
   const queryClient = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
   const [viewing, setViewing] = useState<any | null>(null);
+  const [context, setContext] = useState<{ object_id?: string | null; placement_id?: string | null; ticket_subject?: string } | null>(null);
 
   const { data: tickets } = useQuery({
     queryKey: ["admin", "tickets"],
@@ -765,6 +766,7 @@ function TicketsTab() {
               <SortHead label="Инициатор" sortKey="initiator" sort={sort} setSort={setSort} />
               <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
               <TableHead>Размещение</TableHead>
+              <TableHead>Контекст</TableHead>
               <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
               <TableHead></TableHead>
             </TableRow>
@@ -778,8 +780,37 @@ function TicketsTab() {
                   <div>{t.initiator?.name || "—"}</div>
                   <div className="text-muted-foreground">{t.initiator?.email}</div>
                 </TableCell>
-                <TableCell className="text-xs max-w-[180px] truncate">{t.host_objects?.title || "—"}</TableCell>
-                <TableCell className="text-xs">{t.placements?.id ? t.placements.id.slice(0, 8) + "…" : "—"}</TableCell>
+                <TableCell className="text-xs max-w-[180px] truncate">
+                  {t.object_id ? (
+                    <button
+                      className="text-primary hover:underline text-left"
+                      onClick={() => setContext({ object_id: t.object_id, placement_id: t.placement_id, ticket_subject: t.subject })}
+                    >
+                      {t.host_objects?.title || t.object_id.slice(0, 8) + "…"}
+                    </button>
+                  ) : "—"}
+                </TableCell>
+                <TableCell className="text-xs">
+                  {t.placement_id ? (
+                    <button
+                      className="text-primary hover:underline"
+                      onClick={() => setContext({ object_id: t.object_id, placement_id: t.placement_id, ticket_subject: t.subject })}
+                    >
+                      {t.placement_id.slice(0, 8) + "…"}
+                    </button>
+                  ) : "—"}
+                </TableCell>
+                <TableCell>
+                  {(t.object_id || t.placement_id) ? (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setContext({ object_id: t.object_id, placement_id: t.placement_id, ticket_subject: t.subject })}
+                    >
+                      Показать
+                    </Button>
+                  ) : <span className="text-xs text-muted-foreground">—</span>}
+                </TableCell>
                 <TableCell>
                   <Select value={t.status} onValueChange={(v) => updateStatus.mutate({ id: t.id, status: v })}>
                     <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
@@ -797,7 +828,7 @@ function TicketsTab() {
             ))}
             {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
+                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -812,7 +843,143 @@ function TicketsTab() {
         onCreated={() => queryClient.invalidateQueries({ queryKey: ["admin", "tickets"] })}
       />
       <TicketDetailDialog ticket={viewing} onOpenChange={(v) => !v && setViewing(null)} />
+      <TicketContextDialog context={context} onOpenChange={(v) => !v && setContext(null)} />
     </div>
+  );
+}
+
+function TicketContextDialog({
+  context,
+  onOpenChange,
+}: {
+  context: { object_id?: string | null; placement_id?: string | null; ticket_subject?: string } | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const open = !!context;
+  const { data, isLoading } = useQuery({
+    queryKey: ["admin", "ticket-context", context?.object_id, context?.placement_id],
+    enabled: open,
+    queryFn: async () => {
+      const result: any = { object: null, placement: null, request: null, host: null, client: null };
+      if (context?.object_id) {
+        const { data: obj } = await supabase
+          .from("host_objects")
+          .select("*")
+          .eq("id", context.object_id)
+          .maybeSingle();
+        result.object = obj;
+        if (obj?.host_user_id) {
+          const { data: host } = await supabase
+            .from("profiles").select("user_id, name, email, phone")
+            .eq("user_id", obj.host_user_id).maybeSingle();
+          result.host = host;
+        }
+      }
+      if (context?.placement_id) {
+        const { data: pl } = await supabase
+          .from("placements")
+          .select("*, host_objects(title, address)")
+          .eq("id", context.placement_id)
+          .maybeSingle();
+        result.placement = pl;
+        if (pl?.booking_request_id) {
+          const { data: req } = await supabase
+            .from("booking_requests").select("*")
+            .eq("id", pl.booking_request_id).maybeSingle();
+          result.request = req;
+        }
+        if (pl?.client_user_id) {
+          const { data: client } = await supabase
+            .from("profiles").select("user_id, name, email, phone")
+            .eq("user_id", pl.client_user_id).maybeSingle();
+          result.client = client;
+        }
+      }
+      return result;
+    },
+  });
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Контекст обращения</DialogTitle>
+          <DialogDescription>{context?.ticket_subject}</DialogDescription>
+        </DialogHeader>
+
+        {isLoading && <p className="text-sm text-muted-foreground">Загрузка...</p>}
+
+        {data?.object && (
+          <section className="space-y-2 border rounded-lg p-4">
+            <div className="flex items-center justify-between">
+              <h4 className="font-semibold text-sm">Объект</h4>
+              <a
+                href={`/lot/${data.object.id}`}
+                target="_blank"
+                rel="noreferrer"
+                className="text-xs text-primary hover:underline"
+              >
+                Открыть объявление →
+              </a>
+            </div>
+            <div className="text-sm font-medium">{data.object.title}</div>
+            <div className="text-xs text-muted-foreground">{data.object.address}</div>
+            <div className="text-xs grid grid-cols-2 gap-1 pt-2">
+              <div><span className="text-muted-foreground">Статус:</span> {objectStatusLabels?.[data.object.object_status] || data.object.object_status}</div>
+              <div><span className="text-muted-foreground">Категория:</span> {data.object.category || "—"}</div>
+            </div>
+            {data.host && (
+              <div className="text-xs pt-2 border-t">
+                <div className="text-muted-foreground mb-1">Хост:</div>
+                <div>{data.host.name || "—"} · {data.host.email} · {data.host.phone || "—"}</div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {data?.request && (
+          <section className="space-y-2 border rounded-lg p-4">
+            <h4 className="font-semibold text-sm">Заявка</h4>
+            <div className="text-xs grid grid-cols-2 gap-1">
+              <div><span className="text-muted-foreground">Дата:</span> {new Date(data.request.created_at).toLocaleString("ru-RU")}</div>
+              <div><span className="text-muted-foreground">Статус:</span> {bookingRequestStatusLabels?.[data.request.request_status] || data.request.request_status}</div>
+              <div><span className="text-muted-foreground">Период:</span> {data.request.start_date || "?"} → {data.request.end_date || "?"}</div>
+              <div><span className="text-muted-foreground">Клиент:</span> {data.request.client_name}</div>
+              <div><span className="text-muted-foreground">Email:</span> {data.request.client_email || "—"}</div>
+              <div><span className="text-muted-foreground">Телефон:</span> {data.request.client_phone || "—"}</div>
+            </div>
+            {data.request.comment && (
+              <div className="text-xs pt-2 border-t">
+                <div className="text-muted-foreground mb-1">Комментарий клиента:</div>
+                <div className="whitespace-pre-wrap">{data.request.comment}</div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {data?.placement && (
+          <section className="space-y-2 border rounded-lg p-4">
+            <h4 className="font-semibold text-sm">Размещение</h4>
+            <div className="text-xs grid grid-cols-2 gap-1">
+              <div><span className="text-muted-foreground">Статус:</span> {placementStatusLabels?.[data.placement.placement_status] || data.placement.placement_status}</div>
+              <div><span className="text-muted-foreground">Период:</span> {data.placement.started_at || "?"} → {data.placement.ended_at || "?"}</div>
+              <div><span className="text-muted-foreground">Объект:</span> {data.placement.host_objects?.title || "—"}</div>
+              <div><span className="text-muted-foreground">ID:</span> <span className="font-mono">{data.placement.id.slice(0, 12)}…</span></div>
+            </div>
+            {data.client && (
+              <div className="text-xs pt-2 border-t">
+                <div className="text-muted-foreground mb-1">Клиент:</div>
+                <div>{data.client.name || "—"} · {data.client.email} · {data.client.phone || "—"}</div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {!isLoading && !data?.object && !data?.placement && (
+          <p className="text-sm text-muted-foreground">Нет связанных объектов или размещений</p>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
