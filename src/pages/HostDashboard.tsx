@@ -342,7 +342,7 @@ function RequestsTab() {
                       {r.start_date && r.slot_id ? (
                         <Button
                           size="sm"
-                          onClick={() => confirmPlacement.mutate(r.id)}
+                          onClick={() => { setSharePhone(true); setConfirmingId(r.id); }}
                           disabled={confirmPlacement.isPending}
                         >
                           Подтвердить
