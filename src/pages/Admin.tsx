@@ -29,6 +29,7 @@ import {
   objectStatusColors,
   objectStatusLabels,
   objectVerificationStatusLabels,
+  placementStatusLabels,
   ticketStatusColors,
   ticketStatusLabels,
   userVerificationStatusLabels,
