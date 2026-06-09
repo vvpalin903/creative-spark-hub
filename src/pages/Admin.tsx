@@ -211,23 +211,46 @@ function ObjectsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(objects as any[], {
+    searchFields: (o: any) => `${o.title ?? ""} ${o.address ?? ""} ${o.city ?? ""}`,
+    statusField: (o: any) => o.object_status,
+    sortAccessors: {
+      created_at: (o: any) => new Date(o.created_at),
+      title: (o: any) => o.title ?? "",
+      address: (o: any) => `${o.city ?? ""} ${o.address ?? ""}`,
+      slots: (o: any) => o.storage_slots?.length || 0,
+      object_status: (o: any) => o.object_status ?? "",
+      verification_status: (o: any) => o.verification_status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
     <div className="space-y-4">
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(objectStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по названию или адресу..."
+      />
       <div className="rounded-lg border overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Дата</TableHead>
-              <TableHead>Название</TableHead>
-              <TableHead>Адрес</TableHead>
-              <TableHead>Слотов</TableHead>
-              <TableHead>Статус</TableHead>
-              <TableHead>Верификация</TableHead>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Название" sortKey="title" sort={sort} setSort={setSort} />
+              <SortHead label="Адрес" sortKey="address" sort={sort} setSort={setSort} />
+              <SortHead label="Слотов" sortKey="slots" sort={sort} setSort={setSort} />
+              <SortHead label="Статус" sortKey="object_status" sort={sort} setSort={setSort} />
+              <SortHead label="Верификация" sortKey="verification_status" sort={sort} setSort={setSort} />
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {objects?.map((o: any) => (
+            {filtered.map((o: any) => (
               <TableRow key={o.id}>
                 <TableCell className="text-sm">{new Date(o.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell className="max-w-[220px] truncate">{o.title}</TableCell>
@@ -277,9 +300,9 @@ function ObjectsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!objects || objects.length === 0) && (
+            {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет объектов</TableCell>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
               </TableRow>
             )}
           </TableBody>
@@ -290,6 +313,7 @@ function ObjectsTab() {
     </div>
   );
 }
+
 
 /* -------- Requests -------- */
 function RequestsTab() {
