@@ -388,6 +388,41 @@ function RequestsTab() {
         </TableBody>
       </Table>
       </div>
+
+      <Dialog open={!!confirmingId} onOpenChange={(o) => !o && setConfirmingId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Подтвердить заявку</DialogTitle>
+            <DialogDescription>
+              После подтверждения клиент получит уведомление и сможет с вами связаться через чат.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-start gap-3 py-2">
+            <Checkbox
+              id="share-phone"
+              checked={sharePhone}
+              onCheckedChange={(v) => setSharePhone(!!v)}
+            />
+            <div className="space-y-1">
+              <Label htmlFor="share-phone" className="cursor-pointer">
+                Поделиться моим телефоном с клиентом
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Ваш номер будет отправлен клиенту в чат и на e-mail для удобной связи.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmingId(null)}>Отмена</Button>
+            <Button
+              onClick={() => confirmingId && confirmPlacement.mutate({ id: confirmingId, share_phone: sharePhone })}
+              disabled={confirmPlacement.isPending}
+            >
+              Подтвердить
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
