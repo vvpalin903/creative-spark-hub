@@ -727,6 +727,19 @@ function TicketsTab() {
     },
   });
 
+  const { filtered, search, setSearch, status, setStatus, sort, setSort } = useTableControls(tickets as any[], {
+    searchFields: (t: any) => `${t.subject ?? ""} ${t.initiator?.name ?? ""} ${t.initiator?.email ?? ""} ${t.host_objects?.title ?? ""}`,
+    statusField: (t: any) => t.status,
+    sortAccessors: {
+      created_at: (t: any) => new Date(t.created_at),
+      subject: (t: any) => t.subject ?? "",
+      initiator: (t: any) => t.initiator?.name ?? "",
+      object: (t: any) => t.host_objects?.title ?? "",
+      status: (t: any) => t.status ?? "",
+    },
+    defaultSort: { key: "created_at", dir: "desc" },
+  });
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -734,21 +747,30 @@ function TicketsTab() {
           <Plus className="h-4 w-4 mr-1" /> Новое обращение
         </Button>
       </div>
+      <TableToolbar
+        search={search}
+        setSearch={setSearch}
+        status={status}
+        setStatus={setStatus}
+        statusOptions={Object.entries(ticketStatusLabels).map(([value, label]) => ({ value, label }))}
+        count={filtered.length}
+        placeholder="Поиск по теме, инициатору, объекту..."
+      />
       <div className="rounded-lg border overflow-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Дата</TableHead>
-              <TableHead>Тема</TableHead>
-              <TableHead>Инициатор</TableHead>
-              <TableHead>Объект</TableHead>
+              <SortHead label="Дата" sortKey="created_at" sort={sort} setSort={setSort} />
+              <SortHead label="Тема" sortKey="subject" sort={sort} setSort={setSort} />
+              <SortHead label="Инициатор" sortKey="initiator" sort={sort} setSort={setSort} />
+              <SortHead label="Объект" sortKey="object" sort={sort} setSort={setSort} />
               <TableHead>Размещение</TableHead>
-              <TableHead>Статус</TableHead>
+              <SortHead label="Статус" sortKey="status" sort={sort} setSort={setSort} />
               <TableHead></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {tickets?.map((t: any) => (
+            {filtered.map((t: any) => (
               <TableRow key={t.id}>
                 <TableCell className="text-sm">{new Date(t.created_at).toLocaleDateString("ru-RU")}</TableCell>
                 <TableCell className="max-w-[240px] truncate font-medium">{t.subject}</TableCell>
@@ -773,14 +795,15 @@ function TicketsTab() {
                 </TableCell>
               </TableRow>
             ))}
-            {(!tickets || tickets.length === 0) && (
+            {filtered.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Нет обращений</TableCell>
+                <TableCell colSpan={7} className="text-center text-muted-foreground py-8">Ничего не найдено</TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
+
 
       <CreateTicketDialog
         open={createOpen}
