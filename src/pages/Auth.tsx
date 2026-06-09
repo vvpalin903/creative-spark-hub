@@ -138,6 +138,44 @@ export default function Auth() {
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // 1) First — check that email and phone are not already taken.
+    //    We do a light normalization so we can call the check even if other
+    //    fields (name/password) are still invalid.
+    const quickEmail = (suEmail || "").trim().toLowerCase();
+    const quickPhone = normalizePhoneInput(suPhone || "");
+    if (quickEmail && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(quickEmail) && quickPhone) {
+      setSuBusy(true);
+      const { data: preCheck, error: preCheckErr } = await supabase.functions.invoke("email-exists", {
+        body: { email: quickEmail, phone: quickPhone },
+      });
+      setSuBusy(false);
+      if (preCheckErr) {
+        toast({ title: "Ошибка", description: preCheckErr.message, variant: "destructive" });
+        return;
+      }
+      if ((preCheck as any)?.emailExists) {
+        toast({
+          title: "Email уже зарегистрирован",
+          description: "Войдите в существующий аккаунт или восстановите пароль.",
+          variant: "destructive",
+        });
+        setTab("signin");
+        setSiEmail(quickEmail);
+        return;
+      }
+      if ((preCheck as any)?.phoneExists) {
+        toast({
+          title: "Телефон уже зарегистрирован",
+          description: "Этот номер привязан к другому аккаунту. Войдите или восстановите пароль.",
+          variant: "destructive",
+        });
+        setTab("signin");
+        return;
+      }
+    }
+
+    // 2) Now — full validation (name, password strength, etc.)
     if (!suAccepted) {
       toast({ title: "Подтвердите согласие", description: "Нужно согласиться с условиями и политикой конфиденциальности.", variant: "destructive" });
       return;
@@ -164,36 +202,7 @@ export default function Auth() {
       });
       return;
     }
-    // Pre-check: email or phone already registered? Avoid wasting a phone call.
-    const { data: preCheck, error: preCheckErr } = await supabase.functions.invoke("email-exists", {
-      body: { email: parsed.data.email, phone: parsed.data.phone },
-    });
-    if (preCheckErr) {
-      setSuBusy(false);
-      toast({ title: "Ошибка", description: preCheckErr.message, variant: "destructive" });
-      return;
-    }
-    if ((preCheck as any)?.emailExists) {
-      setSuBusy(false);
-      toast({
-        title: "Email уже зарегистрирован",
-        description: "Войдите в существующий аккаунт или восстановите пароль.",
-        variant: "destructive",
-      });
-      setTab("signin");
-      setSiEmail(parsed.data.email);
-      return;
-    }
-    if ((preCheck as any)?.phoneExists) {
-      setSuBusy(false);
-      toast({
-        title: "Телефон уже зарегистрирован",
-        description: "Этот номер привязан к другому аккаунту. Войдите или восстановите пароль.",
-        variant: "destructive",
-      });
-      setTab("signin");
-      return;
-    }
+
     const { data, error } = await supabase.functions.invoke("phone-precheck-init", { body: { phone: parsed.data.phone } });
 
     setSuBusy(false);
